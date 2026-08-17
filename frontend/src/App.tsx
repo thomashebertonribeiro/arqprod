@@ -3,6 +3,7 @@ import { getToken } from './api/client';
 import Login from './pages/Login';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
+import Settings from './pages/Settings';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -26,6 +27,14 @@ export default function App() {
         element={
           <RequireAuth>
             <ProductDetail />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <RequireAuth>
+            <Settings />
           </RequireAuth>
         }
       />

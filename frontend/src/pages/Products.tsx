@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearToken } from '../api/client';
 import { createProduct, listCategories, listSuppliers, listProducts } from '../api/products';
+import Nav from '../components/Nav';
 import type { Paginated, ProductListItem, ProductStatus } from '../api/types';
 
 const ROWS_OPTIONS = [10, 25, 50];
@@ -202,25 +202,7 @@ export default function Products() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
-              A
-            </div>
-            <span className="text-sm font-semibold text-gray-900">Arqprod</span>
-          </div>
-          <button
-            onClick={() => {
-              clearToken();
-              navigate('/login');
-            }}
-            className="text-sm text-gray-500 hover:text-gray-700"
-          >
-            Sair
-          </button>
-        </div>
-      </header>
+      <Nav />
 
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-5 flex items-center justify-between">

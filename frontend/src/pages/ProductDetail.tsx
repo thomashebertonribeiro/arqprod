@@ -17,6 +17,7 @@ import type {
 } from '../api/types';
 import { ALL_STATUSES, STATUS_BADGES, StatusBadge, SummaryRow } from '../components/ui';
 import AttrRow from '../components/AttrRow';
+import Nav from '../components/Nav';
 import VariantsTable from '../components/VariantsTable';
 
 export default function ProductDetail() {
@@ -133,40 +134,9 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/products"
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-              </svg>
-              Products
-            </Link>
-            <span className="text-gray-300">/</span>
-            <span className="text-sm font-medium text-gray-900">{product.nome}</span>
-          </div>
-          <span className="text-xs text-gray-400">
-            Atualizado{' '}
-            {new Date(product.atualizado_em).toLocaleDateString('pt-BR', {
-              day: '2-digit',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
-        </div>
-      </header>
+      <Nav />
 
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto max-w-7xl px-6 pt-4">
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -424,7 +394,7 @@ export default function ProductDetail() {
             </div>
           </aside>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
