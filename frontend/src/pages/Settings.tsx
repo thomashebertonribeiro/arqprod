@@ -11,6 +11,7 @@ import {
 } from '../api/attributes';
 import { listCategories } from '../api/products';
 import type { AttributeDef, AttributeDataType, Paginated } from '../api/types';
+import CategoriesSection from '../components/CategoriesSection';
 import Nav from '../components/Nav';
 
 const TIPOS: { value: AttributeDataType; label: string }[] = [
@@ -51,6 +52,7 @@ const inputCls =
   'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
 
 export default function Settings() {
+  const [tab, setTab] = useState<'campos' | 'categorias'>('campos');
   const [data, setData] = useState<Paginated<AttributeDef> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -256,11 +258,44 @@ export default function Settings() {
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900">
-              Configurações
-              <span className="ml-2 text-sm font-normal text-gray-400">Campos do produto</span>
-            </h1>
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900">Configurações</h1>
             <p className="mt-1 text-sm text-gray-500">
+              Campos customizados do catálogo e hierarquia de categorias.
+            </p>
+          </div>
+          <div className="flex rounded-lg bg-gray-200/60 p-1">
+            <button
+              onClick={() => setTab('campos')}
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition ${
+                tab === 'campos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              Campos
+            </button>
+            <button
+              onClick={() => setTab('categorias')}
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition ${
+                tab === 'categorias' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              Categorias
+            </button>
+          </div>
+        </div>
+
+        {tab === 'categorias' && <CategoriesSection />}
+
+        {tab === 'campos' && (
+        <>
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">
+              Campos do produto
+              <span className="ml-2 text-sm font-normal text-gray-400">
+                {total} {total === 1 ? 'campo' : 'campos'}
+              </span>
+            </h2>
+            <p className="mt-0.5 text-sm text-gray-500">
               Defina os campos customizados do catálogo — sem migração de banco, tudo em JSONB.
             </p>
           </div>
@@ -419,7 +454,6 @@ export default function Settings() {
             </table>
           </div>
         </div>
-      </main>
 
       {/* ------------------------------------------------ modal novo campo */}
       {modalOpen && (
@@ -810,6 +844,9 @@ export default function Settings() {
           </div>
         </div>
       )}
+        </>
+        )}
+      </main>
     </div>
   );
 }
