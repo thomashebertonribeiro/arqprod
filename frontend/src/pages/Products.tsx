@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearToken } from '../api/client';
-import { listProducts } from '../api/products';
-import type { Paginated, ProductListItem } from '../api/types';
+import { createProduct, listCategories, listSuppliers, listProducts } from '../api/products';
+import type { Paginated, ProductListItem, ProductStatus } from '../api/types';
 
 const ROWS_OPTIONS = [10, 25, 50];
+
+const NEW_STATUSES: ProductStatus[] = ['rascunho', 'ativo'];
 
 const STATUS_BADGES: Record<ProductListItem['status'], { label: string; cls: string }> = {
   ativo: { label: 'Active', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },
@@ -45,6 +47,22 @@ function ChevronRight() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 export default function Products() {
   const navigate = useNavigate();
   const [data, setData] = useState<Paginated<ProductListItem> | null>(null);
@@ -57,6 +75,29 @@ export default function Products() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; nome: string }[]>([]);
+  const [suppliers, setSuppliers] = useState<{ id: string; nome: string }[]>([]);
+  const [form, setForm] = useState({
+    nome: '',
+    sku_base: '',
+    descricao: '',
+    status: 'rascunho' as ProductStatus,
+    category_id: '',
+    supplier_id: '',
+  });
+  const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    listCategories()
+      .then((res) => setCategories(res.data))
+      .catch(() => setCategories([]));
+    listSuppliers()
+      .then((res) => setSuppliers(res.data))
+      .catch(() => setSuppliers([]));
+  }, [modalOpen]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300);
@@ -124,6 +165,41 @@ export default function Products() {
     setPage(p);
   };
 
+  const openModal = () => {
+    setForm({ nome: '', sku_base: '', descricao: '', status: 'rascunho', category_id: '', supplier_id: '' });
+    setFormError('');
+    setModalOpen(true);
+  };
+
+  const submitNew = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nome.trim()) {
+      setFormError('Informe o nome do produto');
+      return;
+    }
+    setCreating(true);
+    setFormError('');
+    try {
+      const created = await createProduct({
+        nome: form.nome.trim(),
+        sku_base: form.sku_base.trim() || undefined,
+        descricao: form.descricao.trim() || undefined,
+        status: form.status,
+        category_id: form.category_id || undefined,
+        supplier_id: form.supplier_id || undefined,
+      });
+      setModalOpen(false);
+      navigate(`/products/${created.id}`);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Falha ao criar produto');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const inputCls =
+    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-gray-200 bg-white">
@@ -157,6 +233,13 @@ export default function Products() {
             )}
           </h1>
           <div className="flex items-center gap-2">
+            <button
+              onClick={openModal}
+              className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-sm font-medium text-white transition hover:bg-blue-700"
+            >
+              <PlusIcon />
+              Novo produto
+            </button>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <SearchIcon />
@@ -398,6 +481,147 @@ export default function Products() {
             </div>
           </div>
         </div>
+
+        {modalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Novo produto</h2>
+                  <p className="mt-0.5 text-xs text-gray-400">
+                    Crie o produto e depois edite atributos e variações
+                  </p>
+                </div>
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Fechar"
+                >
+                  <XIcon />
+                </button>
+              </div>
+
+              <form onSubmit={submitNew} className="space-y-4 px-5 py-4">
+                <div>
+                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Nome <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    autoFocus
+                    value={form.nome}
+                    onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+                    placeholder="Ex: Camiseta Tech Algodão"
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      SKU base
+                    </label>
+                    <input
+                      value={form.sku_base}
+                      onChange={(e) => setForm((f) => ({ ...f, sku_base: e.target.value }))}
+                      placeholder="Ex: CAM-TEC"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Status
+                    </label>
+                    <select
+                      value={form.status}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, status: e.target.value as ProductStatus }))
+                      }
+                      className={inputCls}
+                    >
+                      {NEW_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s === 'rascunho' ? 'Rascunho' : 'Ativo'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Categoria
+                    </label>
+                    <select
+                      value={form.category_id}
+                      onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
+                      className={inputCls}
+                    >
+                      <option value="">—</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Fornecedor
+                    </label>
+                    <select
+                      value={form.supplier_id}
+                      onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))}
+                      className={inputCls}
+                    >
+                      <option value="">—</option>
+                      {suppliers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nome}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Descrição
+                  </label>
+                  <textarea
+                    value={form.descricao}
+                    onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
+                    rows={3}
+                    placeholder="Descrição curta do produto…"
+                    className={`${inputCls} resize-none`}
+                  />
+                </div>
+
+                {formError && (
+                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>
+                )}
+
+                <div className="flex justify-end gap-2 border-t border-gray-100 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(false)}
+                    disabled={creating}
+                    className="rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creating}
+                    className="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {creating ? 'Criando…' : 'Criar produto'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

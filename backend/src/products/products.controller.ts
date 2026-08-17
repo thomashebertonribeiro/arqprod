@@ -39,11 +39,12 @@ export class ProductsController {
 
   @Post()
   @ApiOperation({ summary: 'Criar produto' })
-  create(
+  async create(
     @CurrentIdentity() identity: { orgId: string },
     @Body() dto: CreateProductDto,
   ) {
-    return this.service.create(identity.orgId, dto);
+    const created = await this.service.create(identity.orgId, dto);
+    return this.service.findOneEnriched(identity.orgId, created.id);
   }
 
   @Get()

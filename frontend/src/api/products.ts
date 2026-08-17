@@ -48,6 +48,20 @@ export function updateProduct(id: string, patch: Partial<{ nome: string; status:
   });
 }
 
+export function createProduct(input: {
+  nome: string;
+  descricao?: string;
+  sku_base?: string;
+  category_id?: string;
+  supplier_id?: string;
+  status?: ProductStatus;
+}) {
+  return api<ProductDetail>('/products', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 export function getCategoryAttributes(categoryId: string) {
   return api<CategoryAttributeLink[]>(`/categories/${categoryId}/attributes`);
 }
@@ -72,4 +86,8 @@ export function getVariantPrices(variantId: string) {
 
 export function listCategories() {
   return api<Paginated<{ id: string; nome: string; slug: string }>>('/categories');
+}
+
+export function listSuppliers() {
+  return api<{ data: { id: string; nome: string }[] }>('/suppliers');
 }
