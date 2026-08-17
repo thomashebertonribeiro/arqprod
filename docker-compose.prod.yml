@@ -1,0 +1,16 @@
+# Produção: usa o mesmo compose com TLS gerenciado via certbot.
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#   docker compose exec certbot certbot certonly --webroot ... (primeira emissão)
+# Renovação automática é feita pelo serviço certbot (sleep 12h && certbot renew).
+
+services:
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:rw
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'
+    depends_on:
+      - nginx
