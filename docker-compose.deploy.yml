@@ -1,0 +1,10 @@
+services:
+  nginx: !reset {}
+
+  api:
+    ports:
+      - "3000:3000"
+
+  web:
+    ports:
+      - "3080:80"
