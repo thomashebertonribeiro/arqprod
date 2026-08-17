@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  getCategoryAttributes,
   getProduct,
   getVariantPrices,
   getVariantStock,
@@ -9,7 +8,7 @@ import {
   updateProduct,
 } from '../api/products';
 import type {
-  CategoryAttributeLink,
+  AttributeDef,
   ProductDetail as ProductDetailType,
   ProductStatus,
   VariantPriceRow,
@@ -23,7 +22,7 @@ import VariantsTable from '../components/VariantsTable';
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<ProductDetailType | null>(null);
-  const [schema, setSchema] = useState<CategoryAttributeLink[]>([]);
+  const [schema, setSchema] = useState<AttributeDef[]>([]);
   const [variantData, setVariantData] = useState<
     Record<string, { stock: VariantStockRow[]; prices: VariantPriceRow[] }>
   >({});
@@ -42,11 +41,8 @@ export default function ProductDetail() {
     setError('');
     try {
       const p = await getProduct(id);
-      const schemaData = p.category_id
-        ? await getCategoryAttributes(p.category_id)
-        : [];
       setProduct(p);
-      setSchema(schemaData);
+      setSchema(p.fields);
       setDraft(Object.fromEntries(p.attribute_values.map((v) => [v.chave, v.valor])));
 
       const entries = await Promise.all(
@@ -71,11 +67,11 @@ export default function ProductDetail() {
   }, [load]);
 
   const productAttrs = useMemo(
-    () => schema.filter((l) => l.attribute.nivel === 'produto'),
+    () => schema.filter((a) => a.nivel === 'produto'),
     [schema],
   );
   const variantAttrs = useMemo(
-    () => schema.filter((l) => l.attribute.nivel === 'variacao'),
+    () => schema.filter((a) => a.nivel === 'variacao'),
     [schema],
   );
 
@@ -98,8 +94,8 @@ export default function ProductDetail() {
     setSaveError('');
     try {
       const valores = productAttrs
-        .filter((l) => draft[l.attribute.chave] !== undefined)
-        .map((l) => ({ atributo: l.attribute.chave, valor: draft[l.attribute.chave] }));
+        .filter((a) => draft[a.chave] !== undefined)
+        .map((a) => ({ atributo: a.chave, valor: draft[a.chave] }));
       const res = await saveProductAttributeValues(product.id, valores);
       setProduct((prev) => (prev ? { ...prev, attribute_values: res.data } : prev));
       setDraft(Object.fromEntries(res.data.map((v) => [v.chave, v.valor])));
@@ -233,9 +229,7 @@ export default function ProductDetail() {
                     </span>
                   </h2>
                   <p className="mt-0.5 text-xs text-gray-400">
-                    {product.category
-                      ? `Definidos pela categoria "${product.category.nome}"`
-                      : 'Produto sem categoria vinculada'}
+                    Campos globais — aparecem em todos os produtos
                   </p>
                 </div>
                 {!editing ? (
@@ -290,14 +284,14 @@ export default function ProductDetail() {
                 </p>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {productAttrs.map((link) => (
+                  {productAttrs.map((attr) => (
                     <AttrRow
-                      key={link.attribute.id}
-                      link={link}
+                      key={attr.id}
+                      attr={attr}
                       editing={editing}
-                      value={draft[link.attribute.chave]}
+                      value={draft[attr.chave]}
                       onChange={(v) =>
-                        setDraft((prev) => ({ ...prev, [link.attribute.chave]: v }))
+                        setDraft((prev) => ({ ...prev, [attr.chave]: v }))
                       }
                     />
                   ))}

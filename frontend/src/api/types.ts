@@ -121,6 +121,7 @@ export interface ProductDetail {
   tags: string[];
   attribute_values: AttributeValueRow[];
   variants: ProductVariantDetail[];
+  fields: AttributeDef[];
 }
 
 export interface VariantStockRow {

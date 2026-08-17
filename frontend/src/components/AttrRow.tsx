@@ -1,20 +1,19 @@
-import type { CategoryAttributeLink } from '../api/types';
+import type { AttributeDef } from '../api/types';
 import { formatValue, TIPO_LABELS } from './ui';
 
 export default function AttrRow({
-  link,
+  attr,
   editing,
   value,
   onChange,
 }: {
-  link: CategoryAttributeLink;
+  attr: AttributeDef;
   editing: boolean;
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
-  const attr = link.attribute;
   const rule = attr.validationRules[0];
-  const required = rule?.obrigatorio || link.obrigatorio_na_categoria;
+  const required = rule?.obrigatorio;
   const activeOptions = attr.options.filter((o) => o.status === 'ativo');
   const inputCls =
     'w-56 rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
@@ -143,11 +142,6 @@ export default function AttrRow({
           {required && (
             <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-600">
               Obrigatório
-            </span>
-          )}
-          {link.herdado && (
-            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
-              Herdado
             </span>
           )}
         </div>

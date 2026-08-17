@@ -1,5 +1,5 @@
 import type {
-  CategoryAttributeLink,
+  AttributeDef,
   ProductVariantDetail,
   VariantPriceRow,
   VariantStockRow,
@@ -12,7 +12,7 @@ export default function VariantsTable({
   data,
 }: {
   variants: ProductVariantDetail[];
-  variantAttrs: CategoryAttributeLink[];
+  variantAttrs: AttributeDef[];
   data: Record<string, { stock: VariantStockRow[]; prices: VariantPriceRow[] }>;
 }) {
   if (variants.length === 0) {
@@ -65,10 +65,10 @@ export default function VariantsTable({
                     {variantAttrs.length > 0 && (
                       <p className="mt-1 text-xs text-gray-500">
                         {variantAttrs
-                          .map((l) => {
-                            const raw = v.values[l.attribute.chave];
+                          .map((a) => {
+                            const raw = v.values[a.chave];
                             return raw !== undefined
-                              ? `${l.attribute.nome}: ${formatValue(raw)}`
+                              ? `${a.nome}: ${formatValue(raw)}`
                               : null;
                           })
                           .filter(Boolean)

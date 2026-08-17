@@ -103,8 +103,15 @@ export class ProductsService {
       valuesByVariant.set(vv.productVariantId, acc);
     }
 
+    const fields = await this.attributes.find({
+      where: { organizationId: orgId, status: 'ativo' },
+      relations: { validationRules: true, options: true },
+      order: { criadoEm: 'ASC' },
+    });
+
     return {
       ...enriched,
+      fields,
       descricao: base.descricao,
       sku_base: base.skuBase,
       atributos: base.atributos,
