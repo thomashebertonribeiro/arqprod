@@ -4,7 +4,12 @@ services:
   api:
     ports:
       - "3000:3000"
+    volumes:
+      - uploads_data:/app/uploads
 
   web:
     ports:
       - "3080:80"
+
+volumes:
+  uploads_data:

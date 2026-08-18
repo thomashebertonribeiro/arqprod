@@ -1,9 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { mkdirSync } from 'fs';
 import { AppModule } from './app.module';
+import { UPLOADS_DIR } from './uploads/uploads.controller';
 
 async function bootstrap() {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');

@@ -8,7 +8,10 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -238,5 +241,23 @@ export class ProductsController {
     @Body() dto: CreateImageDto,
   ) {
     return this.service.addImage(identity.orgId, id, dto);
+  }
+
+  @Post(':id/images/upload')
+  @ApiOperation({
+    summary: 'Upload de imagem (multipart, campo "file")',
+    description:
+      'Aceita apenas JPEG ou PNG, exatamente 1200x1200px, espaço de cor RGB. ' +
+      'A imagem é armazenada localmente e servida em /api/uploads/{arquivo}.',
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 12 * 1024 * 1024 } }),
+  )
+  uploadImage(
+    @CurrentIdentity() identity: { orgId: string },
+    @Param('id') id: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.service.uploadImage(identity.orgId, id, file);
   }
 }

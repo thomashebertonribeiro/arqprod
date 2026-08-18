@@ -5,6 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
+import { randomUUID } from 'crypto';
+import { mkdir, writeFile } from 'fs/promises';
+import { join } from 'path';
+import sharp from 'sharp';
+import { UPLOADS_DIR } from '../uploads/uploads.controller';
 import { Product } from './product.entity';
 import { ProductVariant } from './product-variant.entity';
 import { ProductAttributeValue } from './product-attribute-value.entity';
@@ -361,6 +366,41 @@ export class ProductsService {
         altText: dto.alt_text ?? null,
       }),
     );
+  }
+
+  async uploadImage(orgId: string, productId: string, file?: Express.Multer.File) {
+    const product = await this.getOwned(orgId, productId);
+    if (!file?.buffer) throw new BadRequestException('Envie um arquivo no campo "file"');
+    if (!['image/jpeg', 'image/png'].includes(file.mimetype)) {
+      throw new BadRequestException('Formato inválido: use JPEG ou PNG');
+    }
+    const meta = await sharp(file.buffer)
+      .metadata()
+      .catch(() => null);
+    if (!meta) throw new BadRequestException('Arquivo de imagem inválido ou corrompido');
+    if (meta.width !== 1200 || meta.height !== 1200) {
+      throw new BadRequestException(
+        `Dimensões devem ser exatamente 1200x1200px (recebido: ${meta.width ?? '?'}x${meta.height ?? '?'})`,
+      );
+    }
+    if (meta.space !== 'srgb') {
+      throw new BadRequestException(
+        `Imagem deve estar no espaço de cor RGB (recebido: ${meta.space ?? 'desconhecido'})`,
+      );
+    }
+    const ext = file.mimetype === 'image/png' ? 'png' : 'jpg';
+    const filename = `${randomUUID()}.${ext}`;
+    await mkdir(UPLOADS_DIR, { recursive: true });
+    await writeFile(join(UPLOADS_DIR, filename), file.buffer);
+    const row = await this.images.save(
+      this.images.create({
+        productId: product.id,
+        url: `/api/uploads/${filename}`,
+        ordem: 0,
+      }),
+    );
+    this.webhooks.dispatch(orgId, 'product.updated', { product_id: product.id }).catch(() => undefined);
+    return row;
   }
 
   /** Reconstrói o cache JSONB `atributos` do produto a cada escrita. */

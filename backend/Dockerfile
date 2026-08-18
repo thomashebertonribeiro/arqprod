@@ -20,5 +20,7 @@ RUN npm ci --omit=dev
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/src/database/migrations ./dist/database/migrations
 
+RUN mkdir -p /app/uploads
+
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

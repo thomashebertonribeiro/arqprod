@@ -6,6 +6,7 @@ import {
   getVariantStock,
   saveProductAttributeValues,
   updateProduct,
+  uploadProductImage,
 } from '../api/products';
 import type {
   AttributeDef,
@@ -34,6 +35,8 @@ export default function ProductDetail() {
   const [draft, setDraft] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -65,6 +68,22 @@ export default function ProductDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !id) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      await uploadProductImage(id, file);
+      await load();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Falha no upload');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const productAttrs = useMemo(
     () => schema.filter((a) => a.nivel === 'produto'),
@@ -167,29 +186,57 @@ export default function ProductDetail() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* ------------------------------- coluna principal */}
           <div className="space-y-6 lg:col-span-2">
-            {mainImage && (
-              <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-                <div className="flex h-64 items-center justify-center bg-gray-100">
-                  <img
-                    src={mainImage.url}
-                    alt={mainImage.alt_text ?? product.nome}
-                    className="h-full w-full object-cover"
-                  />
+            <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                {mainImage ? (
+                  <div className="flex h-64 items-center justify-center bg-gray-100">
+                    <img
+                      src={mainImage.url}
+                      alt={mainImage.alt_text ?? product.nome}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-48 flex-col items-center justify-center gap-1.5 bg-gray-50">
+                    <p className="text-sm text-gray-400">Nenhuma imagem cadastrada</p>
+                    <p className="text-xs text-gray-400">JPEG ou PNG · 1200x1200px · RGB</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 border-t border-gray-100 p-3">
+                  {product.images.map((img) => (
+                    <img
+                      key={img.id}
+                      src={img.url}
+                      alt={img.alt_text ?? ''}
+                      className="h-14 w-14 rounded-lg border border-gray-200 object-cover"
+                    />
+                  ))}
+                  <label
+                    title="JPEG ou PNG, exatamente 1200x1200px, espaço de cor RGB"
+                    className="ml-auto flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    {uploading ? (
+                      <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                    ) : (
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                    )}
+                    {uploading ? 'Enviando…' : 'Adicionar imagem'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={onPickImage}
+                    />
+                  </label>
                 </div>
-                {product.images.length > 1 && (
-                  <div className="flex gap-2 border-t border-gray-100 p-3">
-                    {product.images.map((img) => (
-                      <img
-                        key={img.id}
-                        src={img.url}
-                        alt={img.alt_text ?? ''}
-                        className="h-14 w-14 rounded-lg border border-gray-200 object-cover"
-                      />
-                    ))}
+                {uploadError && (
+                  <div className="border-t border-gray-100 bg-red-50 px-4 py-2 text-xs text-red-600">
+                    {uploadError}
                   </div>
                 )}
               </section>
-            )}
 
             <section className="rounded-xl border border-gray-200 bg-white p-5">
               <h2 className="text-sm font-semibold text-gray-900">Descrição</h2>

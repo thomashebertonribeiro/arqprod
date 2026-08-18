@@ -16,6 +16,7 @@ import { CommerceModule } from './commerce/commerce.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { MetaController } from './meta/meta.controller';
+import { UploadsController } from './uploads/uploads.controller';
 
 @Module({
   imports: [
@@ -45,7 +46,7 @@ import { MetaController } from './meta/meta.controller';
     WebhooksModule,
     IntegrationsModule,
   ],
-  controllers: [MetaController],
+  controllers: [MetaController, UploadsController],
   providers: [
     {
       provide: APP_GUARD,

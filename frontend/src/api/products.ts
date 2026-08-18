@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, ApiError, getToken } from './client';
 import type {
   AttributeValueRow,
   CategoryAttributeLink,
@@ -65,6 +65,28 @@ export function createProduct(input: {
 export function deleteProduct(id: string) {
   return api<{ id: string }>(`/products/${id}`, {
     method: 'DELETE',
+  });
+}
+
+export function uploadProductImage(productId: string, file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  return fetch(`/api/products/${productId}/images/upload`, {
+    method: 'POST',
+    headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+    body: form,
+  }).then(async (res) => {
+    if (!res.ok) {
+      let message = `Erro ${res.status}`;
+      try {
+        const body = (await res.json()) as { message?: string };
+        if (body.message) message = body.message;
+      } catch {
+        /* corpo não-JSON */
+      }
+      throw new ApiError(res.status, message);
+    }
+    return (await res.json()) as { id: string; url: string };
   });
 }
 
