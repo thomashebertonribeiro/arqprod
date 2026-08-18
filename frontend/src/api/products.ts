@@ -62,6 +62,12 @@ export function createProduct(input: {
   });
 }
 
+export function deleteProduct(id: string) {
+  return api<{ id: string }>(`/products/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export function getCategoryAttributes(categoryId: string) {
   return api<CategoryAttributeLink[]>(`/categories/${categoryId}/attributes`);
 }

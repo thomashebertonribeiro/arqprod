@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
@@ -123,6 +124,15 @@ export class ProductsController {
   ) {
     await this.service.update(identity.orgId, id, dto);
     return this.service.findOneEnriched(identity.orgId, id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Excluir produto (cascade em variações, valores, imagens)' })
+  async remove(
+    @CurrentIdentity() identity: { orgId: string },
+    @Param('id') id: string,
+  ) {
+    return this.service.remove(identity.orgId, id);
   }
 
   // ------------------------------------------------------------- attribute values

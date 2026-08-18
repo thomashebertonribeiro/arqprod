@@ -157,6 +157,13 @@ export class ProductsService {
     return this.findOne(orgId, id);
   }
 
+  async remove(orgId: string, id: string) {
+    const product = await this.getOwned(orgId, id);
+    await this.products.delete(product.id);
+    this.webhooks.dispatch(orgId, 'product.deleted', { product_id: id }).catch(() => undefined);
+    return { id: product.id };
+  }
+
   async addVariant(orgId: string, productId: string, dto: CreateVariantDto) {
     const product = await this.getOwned(orgId, productId);
     const exists = await this.variants.findOne({ where: { sku: dto.sku } });
