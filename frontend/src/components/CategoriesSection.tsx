@@ -7,6 +7,7 @@ import {
   updateCategory,
   type CategoryNode,
 } from '../api/categories';
+import { useI18n } from '../i18n';
 
 function PlusIcon() {
   return (
@@ -48,6 +49,7 @@ function flatList(nodes: CategoryNode[]): CategoryNode[] {
 }
 
 export default function CategoriesSection() {
+  const { t } = useI18n();
   const [data, setData] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,7 +69,7 @@ export default function CategoriesSection() {
       const res = await listCategories();
       setData(res.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar categorias');
+      setError(err instanceof Error ? err.message : t('categories.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -86,11 +88,11 @@ export default function CategoriesSection() {
   const submitNew = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) {
-      setFormError('Informe o nome da categoria');
+      setFormError(t('categories.form.nameRequired'));
       return;
     }
     if (!form.slug.trim()) {
-      setFormError('Informe o slug da categoria');
+      setFormError(t('categories.form.slugRequired'));
       return;
     }
     setBusy(true);
@@ -105,7 +107,7 @@ export default function CategoriesSection() {
       setModalOpen(false);
       load();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Falha ao criar categoria');
+      setFormError(err instanceof Error ? err.message : t('categories.createFailed'));
     } finally {
       setBusy(false);
     }
@@ -131,7 +133,7 @@ export default function CategoriesSection() {
       setEditCat(null);
       load();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Falha ao salvar categoria');
+      setFormError(err instanceof Error ? err.message : t('categories.saveFailed'));
     } finally {
       setBusy(false);
     }
@@ -139,15 +141,15 @@ export default function CategoriesSection() {
 
   const remove = async (cat: CategoryNode) => {
     const msg =
-      cat.children?.length || 0 > 0
-        ? `Excluir "${cat.nome}"? As subcategorias serão desvinculadas e os produtos perderão a referência à categoria (sem apagar produtos).`
-        : `Excluir "${cat.nome}"? Produtos desta categoria perderão a referência (sem apagar produtos).`;
+      (cat.children?.length ?? 0) > 0
+        ? t('categories.deleteConfirmChildren', { nome: cat.nome })
+        : t('categories.deleteConfirm', { nome: cat.nome });
     if (!window.confirm(msg)) return;
     try {
       await deleteCategory(cat.id);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao excluir categoria');
+      setError(err instanceof Error ? err.message : t('categories.deleteFailed'));
     }
   };
 
@@ -160,21 +162,19 @@ export default function CategoriesSection() {
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-900">
-            Categorias
+            {t('categories.title')}
             <span className="ml-2 text-sm font-normal text-gray-400">
-              {total} {total === 1 ? 'categoria' : 'categorias'}
+              {total} {total === 1 ? t('categories.count') : t('categories.countPlural')}
             </span>
           </h2>
-          <p className="mt-0.5 text-sm text-gray-500">
-            Hierarquia do catálogo. Produtos vinculados não são apagados ao excluir.
-          </p>
+          <p className="mt-0.5 text-sm text-gray-500">{t('categories.subtitle')}</p>
         </div>
         <button
           onClick={openModal}
           className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-sm font-medium text-white transition hover:bg-blue-700"
         >
           <PlusIcon />
-          Nova categoria
+          {t('categories.new')}
         </button>
       </div>
 
@@ -182,17 +182,17 @@ export default function CategoriesSection() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr className="border-b border-gray-200 bg-gray-50/70 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-              <th className="px-4 py-2.5 font-medium">Categoria</th>
-              <th className="px-3 py-2.5 font-medium">Slug</th>
-              <th className="px-3 py-2.5 font-medium">Ordem</th>
-              <th className="px-4 py-2.5 text-right font-medium">Ações</th>
+              <th className="px-4 py-2.5 font-medium">{t('categories.col.category')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('categories.col.slug')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('categories.col.order')}</th>
+              <th className="px-4 py-2.5 text-right font-medium">{t('categories.col.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading && (
               <tr>
                 <td colSpan={4} className="px-4 py-16 text-center text-sm text-gray-400">
-                  Carregando categorias…
+                  {t('categories.loading')}
                 </td>
               </tr>
             )}
@@ -206,8 +206,8 @@ export default function CategoriesSection() {
             {!loading && !error && total === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-16 text-center">
-                  <p className="text-sm font-medium text-gray-700">Nenhuma categoria cadastrada</p>
-                  <p className="mt-1 text-sm text-gray-400">Clique em "Nova categoria" para criar a primeira.</p>
+                  <p className="text-sm font-medium text-gray-700">{t('categories.empty')}</p>
+                  <p className="mt-1 text-sm text-gray-400">{t('categories.emptyHint')}</p>
                 </td>
               </tr>
             )}
@@ -232,13 +232,13 @@ export default function CategoriesSection() {
                       onClick={() => openEdit(cat)}
                       className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
                     >
-                      Editar
+                      {t('common.edit')}
                     </button>
                     <button
                       onClick={() => remove(cat)}
                       className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
                     >
-                      Excluir
+                      {t('common.delete')}
                     </button>
                   </div>
                 </td>
@@ -254,13 +254,13 @@ export default function CategoriesSection() {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Nova categoria</h2>
-                <p className="mt-0.5 text-xs text-gray-400">Slug é imutável depois de criada</p>
+                <h2 className="text-base font-semibold text-gray-900">{t('categories.modal.title')}</h2>
+                <p className="mt-0.5 text-xs text-gray-400">{t('categories.modal.immutableSlug')}</p>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
                 className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Fechar"
+                aria-label={t('common.close')}
               >
                 <XIcon />
               </button>
@@ -269,7 +269,7 @@ export default function CategoriesSection() {
             <form onSubmit={submitNew} className="space-y-4 px-5 py-4">
               <div>
                 <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Nome <span className="text-red-500">*</span>
+                  {t('categories.form.name')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   autoFocus
@@ -282,13 +282,13 @@ export default function CategoriesSection() {
                       slug: f.slug === '' || f.slug === normalizeSlug(f.nome) ? normalizeSlug(nome) : f.slug,
                     }));
                   }}
-                  placeholder="Ex: Eletrônicos"
+                  placeholder={t('categories.form.namePh')}
                   className={inputCls}
                 />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Slug <span className="text-red-500">*</span>
+                  {t('categories.form.slug')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={form.slug}
@@ -300,14 +300,14 @@ export default function CategoriesSection() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Categoria pai
+                    {t('categories.form.parent')}
                   </label>
                   <select
                     value={form.parent_id}
                     onChange={(e) => setForm((f) => ({ ...f, parent_id: e.target.value }))}
                     className={inputCls}
                   >
-                    <option value="">— raiz —</option>
+                    <option value="">{t('categories.form.root')}</option>
                     {allCats.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.nome}
@@ -317,7 +317,7 @@ export default function CategoriesSection() {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Ordem
+                    {t('categories.form.order')}
                   </label>
                   <input
                     type="number"
@@ -341,14 +341,14 @@ export default function CategoriesSection() {
                   disabled={busy}
                   className="rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={busy}
                   className="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {busy ? 'Criando…' : 'Criar categoria'}
+                  {busy ? t('categories.form.creating') : t('categories.form.create')}
                 </button>
               </div>
             </form>
@@ -362,13 +362,13 @@ export default function CategoriesSection() {
           <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Editar categoria</h2>
-                <p className="mt-0.5 text-xs text-gray-400">Alterar slug afeta URLs e a API</p>
+                <h2 className="text-base font-semibold text-gray-900">{t('categories.edit.title')}</h2>
+                <p className="mt-0.5 text-xs text-gray-400">{t('categories.edit.slugHint')}</p>
               </div>
               <button
                 onClick={() => setEditCat(null)}
                 className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Fechar"
+                aria-label={t('common.close')}
               >
                 <XIcon />
               </button>
@@ -377,7 +377,7 @@ export default function CategoriesSection() {
             <form onSubmit={saveEdit} className="space-y-4 px-5 py-4">
               <div>
                 <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Nome
+                  {t('categories.form.name')}
                 </label>
                 <input
                   value={editForm.nome}
@@ -388,7 +388,7 @@ export default function CategoriesSection() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Slug
+                    {t('categories.form.slug')}
                   </label>
                   <input
                     value={editForm.slug}
@@ -398,7 +398,7 @@ export default function CategoriesSection() {
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Ordem
+                    {t('categories.form.order')}
                   </label>
                   <input
                     type="number"
@@ -421,14 +421,14 @@ export default function CategoriesSection() {
                   disabled={busy}
                   className="rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={busy || !editForm.nome.trim() || !editForm.slug.trim()}
                   className="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {busy ? 'Salvando…' : 'Salvar'}
+                  {busy ? t('categories.edit.saving') : t('categories.edit.save')}
                 </button>
               </div>
             </form>

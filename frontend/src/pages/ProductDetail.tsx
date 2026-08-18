@@ -15,13 +15,15 @@ import type {
   VariantPriceRow,
   VariantStockRow,
 } from '../api/types';
-import { ALL_STATUSES, STATUS_BADGES, StatusBadge, SummaryRow } from '../components/ui';
+import { ALL_STATUSES, StatusBadge, SummaryRow } from '../components/ui';
 import AttrRow from '../components/AttrRow';
 import Nav from '../components/Nav';
 import VariantsTable from '../components/VariantsTable';
+import { useI18n } from '../i18n';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
+  const { t, formatDate } = useI18n();
   const [product, setProduct] = useState<ProductDetailType | null>(null);
   const [schema, setSchema] = useState<AttributeDef[]>([]);
   const [variantData, setVariantData] = useState<
@@ -59,11 +61,11 @@ export default function ProductDetail() {
       );
       setVariantData(Object.fromEntries(entries));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar produto');
+      setError(err instanceof Error ? err.message : t('detail.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     load();
@@ -79,7 +81,7 @@ export default function ProductDetail() {
       await uploadProductImage(id, file);
       await load();
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Falha no upload');
+      setUploadError(err instanceof Error ? err.message : t('detail.uploadFailed'));
     } finally {
       setUploading(false);
     }
@@ -101,7 +103,7 @@ export default function ProductDetail() {
       const updated = await updateProduct(product.id, { status: next });
       setProduct(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao atualizar status');
+      setError(err instanceof Error ? err.message : t('detail.saveFailed'));
     } finally {
       setStatusBusy(false);
     }
@@ -120,7 +122,7 @@ export default function ProductDetail() {
       setDraft(Object.fromEntries(res.data.map((v) => [v.chave, v.valor])));
       setEditing(false);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Falha ao salvar');
+      setSaveError(err instanceof Error ? err.message : t('detail.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -129,7 +131,7 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-sm text-gray-400">Loading product…</div>
+        <div className="text-sm text-gray-400">{t('detail.loading')}</div>
       </div>
     );
   }
@@ -138,7 +140,7 @@ export default function ProductDetail() {
       <div className="flex min-h-screen flex-col items-center justify-center gap-2 bg-gray-50">
         <p className="text-sm text-red-500">{error}</p>
         <Link to="/products" className="text-sm text-blue-600 hover:underline">
-          ← Voltar para a listagem
+          {t('detail.back')}
         </Link>
       </div>
     );
@@ -161,13 +163,13 @@ export default function ProductDetail() {
               <StatusBadge status={product.status} />
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              {product.sku ?? product.sku_base ?? 'Sem SKU'}
+              {product.sku ?? product.sku_base ?? t('products.noSku')}
               {product.category ? ` · ${product.category.nome}` : ''}
               {product.supplier ? ` · ${product.supplier.nome}` : ''}
             </p>
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-500">
-            Status
+            {t('products.form.status')}
             <select
               value={product.status}
               disabled={statusBusy}
@@ -176,7 +178,7 @@ export default function ProductDetail() {
             >
               {ALL_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {STATUS_BADGES[s].label}
+                  {t(`status.${s}`)}
                 </option>
               ))}
             </select>
@@ -197,8 +199,8 @@ export default function ProductDetail() {
                   </div>
                 ) : (
                   <div className="flex h-48 flex-col items-center justify-center gap-1.5 bg-gray-50">
-                    <p className="text-sm text-gray-400">Nenhuma imagem cadastrada</p>
-                    <p className="text-xs text-gray-400">JPEG ou PNG · 1200x1200px · RGB</p>
+                    <p className="text-sm text-gray-400">{t('detail.noImages')}</p>
+                    <p className="text-xs text-gray-400">{t('detail.imageHint')}</p>
                   </div>
                 )}
                 <div className="flex items-center gap-2 border-t border-gray-100 p-3">
@@ -221,7 +223,7 @@ export default function ProductDetail() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                       </svg>
                     )}
-                    {uploading ? 'Enviando…' : 'Adicionar imagem'}
+                    {uploading ? t('detail.uploading') : t('detail.addImage')}
                     <input
                       type="file"
                       accept="image/jpeg,image/png"
@@ -239,27 +241,27 @@ export default function ProductDetail() {
               </section>
 
             <section className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="text-sm font-semibold text-gray-900">Descrição</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('detail.description')}</h2>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-                {product.descricao || 'Sem descrição.'}
+                {product.descricao || t('detail.noDescription')}
               </p>
               <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-gray-100 pt-4 text-sm sm:grid-cols-3">
                 <div>
-                  <dt className="text-xs text-gray-400">SKU base</dt>
+                  <dt className="text-xs text-gray-400">{t('detail.skuBase')}</dt>
                   <dd className="mt-0.5 font-medium text-gray-900">
                     {product.sku_base ?? '—'}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-400">Origem</dt>
+                  <dt className="text-xs text-gray-400">{t('detail.origin')}</dt>
                   <dd className="mt-0.5 font-medium text-gray-900">
-                    {product.origem_integracao ?? 'Manual'}
+                    {product.origem_integracao ?? t('detail.manual')}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-gray-400">Criado em</dt>
+                  <dt className="text-xs text-gray-400">{t('detail.createdAt')}</dt>
                   <dd className="mt-0.5 font-medium text-gray-900">
-                    {new Date(product.criado_em).toLocaleDateString('pt-BR')}
+                    {formatDate(product.criado_em)}
                   </dd>
                 </div>
               </dl>
@@ -270,13 +272,14 @@ export default function ProductDetail() {
               <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                 <div>
                   <h2 className="text-sm font-semibold text-gray-900">
-                    Campos customizados
+                    {t('detail.customFields')}
                     <span className="ml-2 text-xs font-normal text-gray-400">
-                      {productAttrs.length} {productAttrs.length === 1 ? 'campo' : 'campos'}
+                      {productAttrs.length}{' '}
+                      {productAttrs.length === 1 ? t('detail.fieldsCount') : t('detail.fieldsCountPlural')}
                     </span>
                   </h2>
                   <p className="mt-0.5 text-xs text-gray-400">
-                    Campos globais — aparecem em todos os produtos
+                    {t('detail.fieldsGlobal')}
                   </p>
                 </div>
                 {!editing ? (
@@ -293,7 +296,7 @@ export default function ProductDetail() {
                     disabled={productAttrs.length === 0}
                     className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                   >
-                    Editar valores
+                    {t('detail.editValues')}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2">
@@ -310,14 +313,14 @@ export default function ProductDetail() {
                       disabled={saving}
                       className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                     >
-                      Cancelar
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={saveAttributes}
                       disabled={saving}
                       className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {saving ? 'Salvando…' : 'Salvar'}
+                      {saving ? t('common.saving') : t('detail.save')}
                     </button>
                   </div>
                 )}
@@ -325,8 +328,9 @@ export default function ProductDetail() {
 
               {productAttrs.length === 0 ? (
                 <p className="px-5 py-6 text-sm text-gray-400">
-                  Nenhum campo customizado vinculado a esta categoria. Crie campos em{' '}
-                  <span className="font-mono text-xs">POST /attributes</span> e vincule via{' '}
+                  {t('detail.noFields')}{' '}
+                  <span className="font-mono text-xs">POST /attributes</span>{' '}
+                  {t('detail.noFieldsHint')}{' '}
                   <span className="font-mono text-xs">POST /categories/:id/attributes</span>.
                 </p>
               ) : (
@@ -355,10 +359,10 @@ export default function ProductDetail() {
             <section className="rounded-xl border border-gray-200 bg-white">
               <div className="border-b border-gray-100 px-5 py-4">
                 <h2 className="text-sm font-semibold text-gray-900">
-                  Variações
+                  {t('detail.variations')}
                   <span className="ml-2 text-xs font-normal text-gray-400">
                     {product.variants.length}{' '}
-                    {product.variants.length === 1 ? 'variação' : 'variações'}
+                    {product.variants.length === 1 ? t('detail.variation') : t('detail.variationsPlural')}
                   </span>
                 </h2>
               </div>
@@ -373,31 +377,31 @@ export default function ProductDetail() {
           {/* ------------------------------- sidebar */}
           <aside className="space-y-6">
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-4 text-sm font-semibold text-gray-900">Resumo</h2>
+              <h2 className="mb-4 text-sm font-semibold text-gray-900">{t('detail.summary')}</h2>
               <dl className="space-y-3 text-sm">
                 <SummaryRow
-                  label="Inventory"
+                  label={t('detail.inventory')}
                   value={
                     product.inventory.tracked
-                      ? `${product.inventory.total_available} available`
-                      : 'Not tracked'
+                      ? `${product.inventory.total_available} ${t('detail.available')}`
+                      : t('products.notTracked')
                   }
                   danger={
                     product.inventory.tracked && product.inventory.total_available === 0
                   }
                 />
-                <SummaryRow label="Sales channels" value={String(product.sales_channels)} />
-                <SummaryRow label="Markets" value={String(product.markets)} />
-                <SummaryRow label="Space" value={product.space || '—'} />
-                <SummaryRow label="Vendor" value={product.supplier?.nome ?? '—'} />
-                <SummaryRow label="Category" value={product.category?.nome ?? '—'} />
-                <SummaryRow label="Variações" value={String(product.variant_count)} />
+                <SummaryRow label={t('detail.salesChannels')} value={String(product.sales_channels)} />
+                <SummaryRow label={t('detail.markets')} value={String(product.markets)} />
+                <SummaryRow label={t('detail.space')} value={product.space || '—'} />
+                <SummaryRow label={t('detail.vendor')} value={product.supplier?.nome ?? '—'} />
+                <SummaryRow label={t('detail.category')} value={product.category?.nome ?? '—'} />
+                <SummaryRow label={t('detail.variations')} value={String(product.variant_count)} />
               </dl>
             </div>
 
             {product.tags.length > 0 && (
               <div className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="mb-3 text-sm font-semibold text-gray-900">Tags</h2>
+                <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('detail.tags')}</h2>
                 <div className="flex flex-wrap gap-1.5">
                   {product.tags.map((t) => (
                     <span
@@ -412,7 +416,7 @@ export default function ProductDetail() {
             )}
 
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">API</h2>
+              <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('detail.api')}</h2>
               <div className="space-y-1.5 text-xs text-gray-500">
                 <p>
                   <span className="font-mono text-gray-700">GET /products/{product.id}</span>
@@ -422,14 +426,14 @@ export default function ProductDetail() {
                     POST /products/{product.id}/attribute-values
                   </span>
                   <br />
-                  Campos dinâmicos, sem migração de schema.
+                  {t('detail.dynamicFields')}
                 </p>
                 <p>
                   <span className="font-mono text-gray-700">
                     GET /categories/{product.category_id ?? '…'}/attributes
                   </span>
                   <br />
-                  Formulário dinâmico da categoria.
+                  {t('detail.dynamicForm')}
                 </p>
               </div>
             </div>

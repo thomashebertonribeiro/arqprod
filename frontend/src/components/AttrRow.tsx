@@ -1,5 +1,6 @@
 import type { AttributeDef } from '../api/types';
-import { formatValue, TIPO_LABELS } from './ui';
+import { useI18n } from '../i18n';
+import { formatValue, tipoLabel } from './ui';
 
 export default function AttrRow({
   attr,
@@ -12,6 +13,7 @@ export default function AttrRow({
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
+  const { t } = useI18n();
   const rule = attr.validationRules[0];
   const required = rule?.obrigatorio;
   const activeOptions = attr.options.filter((o) => o.status === 'ativo');
@@ -61,8 +63,8 @@ export default function AttrRow({
             className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           >
             <option value="">—</option>
-            <option value="true">Sim</option>
-            <option value="false">Não</option>
+            <option value="true">{t('common.yes')}</option>
+            <option value="false">{t('common.no')}</option>
           </select>
         );
         break;
@@ -141,13 +143,13 @@ export default function AttrRow({
           <span className="text-sm font-medium text-gray-900">{attr.nome}</span>
           {required && (
             <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-red-600">
-              Obrigatório
+              {t('common.required')}
             </span>
           )}
         </div>
         <p className="mt-0.5 text-xs text-gray-400">
           <span className="font-mono">{attr.chave}</span> ·{' '}
-          {TIPO_LABELS[attr.tipoDado] ?? attr.tipoDado}
+          {tipoLabel(t, attr.tipoDado)}
           {rule?.valor_min != null && rule?.valor_max != null
             ? ` · ${rule.valor_min}–${rule.valor_max}`
             : ''}
@@ -159,7 +161,7 @@ export default function AttrRow({
         <span className="max-w-[50%] truncate text-right text-sm text-gray-700">
           {value === undefined || value === null || value === ''
             ? <span className="text-gray-300">—</span>
-            : formatValue(value)}
+            : formatValue(t, value)}
         </span>
       )}
     </div>

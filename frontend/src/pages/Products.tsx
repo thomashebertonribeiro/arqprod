@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   createProduct,
@@ -8,18 +8,13 @@ import {
   listProducts,
 } from '../api/products';
 import Nav from '../components/Nav';
+import { STATUS_CLS } from '../components/ui';
+import { useI18n } from '../i18n';
 import type { Paginated, ProductListItem, ProductStatus } from '../api/types';
 
 const ROWS_OPTIONS = [10, 25, 50];
 
 const NEW_STATUSES: ProductStatus[] = ['rascunho', 'ativo'];
-
-const STATUS_BADGES: Record<ProductListItem['status'], { label: string; cls: string }> = {
-  ativo: { label: 'Active', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },
-  rascunho: { label: 'Draft', cls: 'bg-gray-100 text-gray-600 ring-gray-500/20' },
-  inativo: { label: 'Inactive', cls: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
-  descontinuado: { label: 'Discontinued', cls: 'bg-gray-100 text-gray-500 ring-gray-500/10' },
-};
 
 function SearchIcon() {
   return (
@@ -81,6 +76,7 @@ function KebabIcon() {
 
 export default function Products() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [data, setData] = useState<Paginated<ProductListItem> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -118,8 +114,8 @@ export default function Products() {
   }, [modalOpen]);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(timer);
   }, [q]);
 
   useEffect(() => {
@@ -139,11 +135,11 @@ export default function Products() {
       setData(res);
       setSelected(new Set());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar produtos');
+      setError(err instanceof Error ? err.message : t('products.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, debouncedQ, statusFilter]);
+  }, [page, perPage, debouncedQ, statusFilter, t]);
 
   useEffect(() => {
     load();
@@ -192,7 +188,7 @@ export default function Products() {
   const submitNew = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) {
-      setFormError('Informe o nome do produto');
+      setFormError(t('products.nameRequired'));
       return;
     }
     setCreating(true);
@@ -209,21 +205,21 @@ export default function Products() {
       setModalOpen(false);
       navigate(`/products/${created.id}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Falha ao criar produto');
+      setFormError(err instanceof Error ? err.message : t('products.createFailed'));
     } finally {
       setCreating(false);
     }
   };
 
   const confirmDelete = async (p: ProductListItem) => {
-    if (!window.confirm(`Excluir "${p.nome}"? Variações, valores e imagens também serão apagados.`)) return;
+    if (!window.confirm(t('products.deleteConfirm', { nome: p.nome }))) return;
     setDeleting(p.id);
     setMenuOpen(null);
     try {
       await deleteProduct(p.id);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao excluir produto');
+      setError(err instanceof Error ? err.message : t('products.deleteFailed'));
     } finally {
       setDeleting(null);
     }
@@ -239,10 +235,10 @@ export default function Products() {
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-5 flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">
-            Products
+            {t('products.title')}
             {data && (
               <span className="ml-2 text-sm font-normal text-gray-400">
-                {total} {total === 1 ? 'item' : 'items'}
+                {total} {total === 1 ? t('products.items') : t('products.itemsPlural')}
               </span>
             )}
           </h1>
@@ -252,7 +248,7 @@ export default function Products() {
               className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <PlusIcon />
-              Novo produto
+              {t('products.new')}
             </button>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -261,7 +257,7 @@ export default function Products() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search products"
+                placeholder={t('products.search')}
                 className="h-9 w-64 rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
@@ -275,14 +271,14 @@ export default function Products() {
                 }`}
               >
                 <FilterIcon />
-                Filter
+                {t('products.filter')}
               </button>
               {filtersOpen && (
                 <div className="absolute right-0 top-11 z-10 w-48 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                   <p className="px-2 pb-1 pt-1 text-xs font-medium uppercase tracking-wide text-gray-400">
-                    Status
+                    {t('products.col.status')}
                   </p>
-                  {['', 'ativo', 'rascunho', 'inativo', 'descontinuado'].map((s) => (
+                  {['', ...NEW_STATUSES, 'inativo', 'descontinuado'].map((s) => (
                     <button
                       key={s}
                       onClick={() => {
@@ -295,7 +291,7 @@ export default function Products() {
                           : 'text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      {s === '' ? 'All statuses' : STATUS_BADGES[s as ProductListItem['status']].label}
+                      {s === '' ? t('products.allStatuses') : t(`status.${s}` as never)}
                     </button>
                   ))}
                 </div>
@@ -306,12 +302,12 @@ export default function Products() {
 
         {selected.size > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800">
-            {selected.size} selected
+            {selected.size} {t('products.selected')}
             <button
               onClick={() => setSelected(new Set())}
               className="ml-auto font-medium text-blue-700 hover:underline"
             >
-              Clear selection
+              {t('products.clearSelection')}
             </button>
           </div>
         )}
@@ -332,39 +328,37 @@ export default function Products() {
                       className="h-3.5 w-3.5 rounded border-gray-300 accent-blue-600"
                     />
                   </th>
-                  <th className="px-3 py-2.5 font-medium">Product</th>
-                  <th className="px-3 py-2.5 font-medium">Status</th>
-                  <th className="px-3 py-2.5 font-medium">Inventory</th>
-                  <th className="px-3 py-2.5 font-medium">Sales channels</th>
-                  <th className="px-3 py-2.5 font-medium">Markets</th>
-                  <th className="px-3 py-2.5 font-medium">Category</th>
-                  <th className="px-3 py-2.5 font-medium">Space</th>
-                  <th className="px-3 py-2.5 font-medium">Vendor</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.product')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.status')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.inventory')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.channels')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.markets')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.category')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.space')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.vendor')}</th>
                   <th className="w-12 px-4 py-2.5"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-16 text-center text-sm text-gray-400">
-                      Loading products…
+                    <td colSpan={10} className="px-4 py-16 text-center text-sm text-gray-400">
+                      {t('products.loading')}
                     </td>
                   </tr>
                 )}
                 {!loading && error && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-16 text-center text-sm text-red-500">
+                    <td colSpan={10} className="px-4 py-16 text-center text-sm text-red-500">
                       {error}
                     </td>
                   </tr>
                 )}
                 {!loading && !error && data?.data.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-16 text-center">
-                      <p className="text-sm font-medium text-gray-700">No products found</p>
-                      <p className="mt-1 text-sm text-gray-400">
-                        Try adjusting your search or filters.
-                      </p>
+                    <td colSpan={10} className="px-4 py-16 text-center">
+                      <p className="text-sm font-medium text-gray-700">{t('products.empty')}</p>
+                      <p className="mt-1 text-sm text-gray-400">{t('products.emptyHint')}</p>
                     </td>
                   </tr>
                 )}
@@ -402,17 +396,17 @@ export default function Products() {
                               {p.nome}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {p.sku ?? 'Sem SKU'}
-                              {p.variant_count > 1 ? ` · ${p.variant_count} variants` : ''}
+                              {p.sku ?? t('products.noSku')}
+                              {p.variant_count > 1 ? ` · ${p.variant_count} ${t('products.variants')}` : ''}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-3 py-2.5">
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGES[p.status].cls}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_CLS[p.status]}`}
                         >
-                          {STATUS_BADGES[p.status].label}
+                          {t(`status.${p.status}` as never)}
                         </span>
                       </td>
                       <td className="px-3 py-2.5">
@@ -424,12 +418,10 @@ export default function Products() {
                                 : 'text-gray-700'
                             }`}
                           >
-                            {p.inventory.total_available} in stock
+                            {p.inventory.total_available} {t('products.inStock')}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">
-                            Inventory not tracked
-                          </span>
+                          <span className="text-sm text-gray-400">{t('products.notTracked')}</span>
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-sm text-gray-700">
@@ -453,7 +445,7 @@ export default function Products() {
                             onClick={() => setMenuOpen(menuOpen === p.id ? null : p.id)}
                             disabled={deleting === p.id}
                             className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40"
-                            aria-label="Ações"
+                            aria-label={t('products.actions')}
                           >
                             {deleting === p.id ? (
                               <span className="block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
@@ -478,7 +470,7 @@ export default function Products() {
                                   <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                   </svg>
-                                  Editar
+                                  {t('common.edit')}
                                 </button>
                                 <button
                                   onClick={() => confirmDelete(p)}
@@ -487,7 +479,7 @@ export default function Products() {
                                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                   </svg>
-                                  Excluir
+                                  {t('common.delete')}
                                 </button>
                               </div>
                             </>
@@ -502,7 +494,7 @@ export default function Products() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 bg-white px-4 py-2.5">
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              Rows per page
+              {t('products.rowsPerPage')}
               <select
                 value={perPage}
                 onChange={(e) => {
@@ -520,14 +512,14 @@ export default function Products() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm tabular-nums text-gray-500">
-                {from}–{to} of {total}
+                {from}–{to} {t('common.of')} {total}
               </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => goToPage(page - 1)}
                   disabled={page <= 1}
                   className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white"
-                  aria-label="Previous page"
+                  aria-label={t('products.title')}
                 >
                   <ChevronLeft />
                 </button>
@@ -535,7 +527,7 @@ export default function Products() {
                   onClick={() => goToPage(page + 1)}
                   disabled={page >= (data?.meta.total_pages ?? 1)}
                   className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-300 text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white"
-                  aria-label="Next page"
+                  aria-label={t('products.title')}
                 >
                   <ChevronRight />
                 </button>
@@ -549,15 +541,13 @@ export default function Products() {
             <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
               <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                 <div>
-                  <h2 className="text-base font-semibold text-gray-900">Novo produto</h2>
-                  <p className="mt-0.5 text-xs text-gray-400">
-                    Crie o produto e depois edite atributos e variações
-                  </p>
+                  <h2 className="text-base font-semibold text-gray-900">{t('products.modal.title')}</h2>
+                  <p className="mt-0.5 text-xs text-gray-400">{t('products.modal.subtitle')}</p>
                 </div>
                 <button
                   onClick={() => setModalOpen(false)}
                   className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                  aria-label="Fechar"
+                  aria-label={t('common.close')}
                 >
                   <XIcon />
                 </button>
@@ -566,13 +556,13 @@ export default function Products() {
               <form onSubmit={submitNew} className="space-y-4 px-5 py-4">
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Nome <span className="text-red-500">*</span>
+                    {t('products.form.name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     autoFocus
                     value={form.nome}
                     onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-                    placeholder="Ex: Camiseta Tech Algodão"
+                    placeholder={t('products.form.placeholderName')}
                     className={inputCls}
                   />
                 </div>
@@ -580,18 +570,18 @@ export default function Products() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                      SKU base
+                      {t('products.form.skuBase')}
                     </label>
                     <input
                       value={form.sku_base}
                       onChange={(e) => setForm((f) => ({ ...f, sku_base: e.target.value }))}
-                      placeholder="Ex: CAM-TEC"
+                      placeholder={t('products.form.placeholderSku')}
                       className={inputCls}
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Status
+                      {t('products.form.status')}
                     </label>
                     <select
                       value={form.status}
@@ -602,7 +592,7 @@ export default function Products() {
                     >
                       {NEW_STATUSES.map((s) => (
                         <option key={s} value={s}>
-                          {s === 'rascunho' ? 'Rascunho' : 'Ativo'}
+                          {s === 'rascunho' ? t('products.form.draft') : t('products.form.active')}
                         </option>
                       ))}
                     </select>
@@ -612,7 +602,7 @@ export default function Products() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Categoria
+                      {t('products.form.category')}
                     </label>
                     <select
                       value={form.category_id}
@@ -629,7 +619,7 @@ export default function Products() {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Fornecedor
+                      {t('products.form.supplier')}
                     </label>
                     <select
                       value={form.supplier_id}
@@ -648,13 +638,13 @@ export default function Products() {
 
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Descrição
+                    {t('products.form.description')}
                   </label>
                   <textarea
                     value={form.descricao}
                     onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))}
                     rows={3}
-                    placeholder="Descrição curta do produto…"
+                    placeholder={t('products.form.descriptionPlaceholder')}
                     className={`${inputCls} resize-none`}
                   />
                 </div>
@@ -670,14 +660,14 @@ export default function Products() {
                     disabled={creating}
                     className="rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                   >
-                    Cancelar
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={creating}
                     className="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {creating ? 'Criando…' : 'Criar produto'}
+                    {creating ? t('products.form.creating') : t('products.form.create')}
                   </button>
                 </div>
               </form>

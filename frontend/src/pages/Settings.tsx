@@ -13,15 +13,7 @@ import { listCategories } from '../api/products';
 import type { AttributeDef, AttributeDataType, Paginated } from '../api/types';
 import CategoriesSection from '../components/CategoriesSection';
 import Nav from '../components/Nav';
-
-const TIPOS: { value: AttributeDataType; label: string }[] = [
-  { value: 'texto', label: 'Texto' },
-  { value: 'numero', label: 'Número' },
-  { value: 'booleano', label: 'Sim/Não' },
-  { value: 'lista', label: 'Lista' },
-  { value: 'lista_multipla', label: 'Lista múltipla' },
-  { value: 'data', label: 'Data' },
-];
+import { useI18n } from '../i18n';
 
 function PlusIcon() {
   return (
@@ -52,6 +44,7 @@ const inputCls =
   'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
 
 export default function Settings() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<'campos' | 'categorias'>('campos');
   const [data, setData] = useState<Paginated<AttributeDef> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +114,7 @@ export default function Settings() {
         setLinkedCatIds((prev) => new Set(prev).add(catId));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao atualizar vínculo');
+      setError(err instanceof Error ? err.message : t('settings.editModal.linkFailed'));
     } finally {
       setToggleBusy('');
     }
@@ -134,7 +127,7 @@ export default function Settings() {
       const res = await listAttributes({ nivel: nivelFilter || undefined });
       setData(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar campos');
+      setError(err instanceof Error ? err.message : t('settings.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -166,15 +159,15 @@ export default function Settings() {
   const submitNew = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) {
-      setFormError('Informe o nome do campo');
+      setFormError(t('settings.form.nameRequired'));
       return;
     }
     if (!form.chave.trim()) {
-      setFormError('Informe a chave do campo');
+      setFormError(t('settings.form.keyRequired'));
       return;
     }
     if (needsOptions && form.opcoes.filter((o) => o.trim()).length === 0) {
-      setFormError('Campos lista exigem ao menos uma opção');
+      setFormError(t('settings.form.optionRequired'));
       return;
     }
     setCreating(true);
@@ -199,7 +192,7 @@ export default function Settings() {
       setModalOpen(false);
       load();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Falha ao criar campo');
+      setFormError(err instanceof Error ? err.message : t('settings.form.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -218,7 +211,7 @@ export default function Settings() {
       setEditAttr(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao salvar');
+      setError(err instanceof Error ? err.message : t('settings.editModal.saveFailed'));
     } finally {
       setEditBusy(false);
     }
@@ -233,19 +226,19 @@ export default function Settings() {
       setEditAttr(null);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao adicionar opção');
+      setError(err instanceof Error ? err.message : t('settings.editModal.addFailed'));
     } finally {
       setEditBusy(false);
     }
   };
 
   const archive = async (attr: AttributeDef) => {
-    if (!window.confirm(`Arquivar o campo "${attr.nome}"? Produtos existentes não são afetados.`)) return;
+    if (!window.confirm(t('settings.archiveConfirm', { nome: attr.nome }))) return;
     try {
       await archiveAttribute(attr.id);
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao arquivar');
+      setError(err instanceof Error ? err.message : t('settings.archiveFailed'));
     }
   };
 
@@ -258,10 +251,8 @@ export default function Settings() {
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900">Configurações</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Campos customizados do catálogo e hierarquia de categorias.
-            </p>
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900">{t('settings.title')}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t('settings.subtitle')}</p>
           </div>
           <div className="flex rounded-lg bg-gray-200/60 p-1">
             <button
@@ -270,7 +261,7 @@ export default function Settings() {
                 tab === 'campos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              Campos
+              {t('settings.tab.fields')}
             </button>
             <button
               onClick={() => setTab('categorias')}
@@ -278,7 +269,7 @@ export default function Settings() {
                 tab === 'categorias' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              Categorias
+              {t('settings.tab.categories')}
             </button>
           </div>
         </div>
@@ -290,14 +281,12 @@ export default function Settings() {
         <div className="mb-5 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-gray-900">
-              Campos do produto
+              {t('settings.fieldsTitle')}
               <span className="ml-2 text-sm font-normal text-gray-400">
-                {total} {total === 1 ? 'campo' : 'campos'}
+                {total} {total === 1 ? t('settings.fieldsCount') : t('settings.fieldsCountPlural')}
               </span>
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">
-              Defina os campos customizados do catálogo — sem migração de banco, tudo em JSONB.
-            </p>
+            <p className="mt-0.5 text-sm text-gray-500">{t('settings.fieldsSubtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             <select
@@ -305,16 +294,16 @@ export default function Settings() {
               onChange={(e) => setNivelFilter(e.target.value)}
               className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-blue-500"
             >
-              <option value="">Todos os níveis</option>
-              <option value="produto">Produto</option>
-              <option value="variacao">Variação</option>
+              <option value="">{t('settings.allLevels')}</option>
+              <option value="produto">{t('settings.product')}</option>
+              <option value="variacao">{t('settings.variation')}</option>
             </select>
             <button
               onClick={openModal}
               className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-sm font-medium text-white transition hover:bg-blue-700"
             >
               <PlusIcon />
-              Novo campo
+              {t('settings.newField')}
             </button>
           </div>
         </div>
@@ -324,20 +313,20 @@ export default function Settings() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50/70 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                  <th className="px-4 py-2.5 font-medium">Campo</th>
-                  <th className="px-3 py-2.5 font-medium">Tipo</th>
-                  <th className="px-3 py-2.5 font-medium">Nível</th>
-                  <th className="px-3 py-2.5 font-medium">Regras</th>
-                  <th className="px-3 py-2.5 font-medium">Opções</th>
-                  <th className="px-3 py-2.5 font-medium">Status</th>
-                  <th className="px-4 py-2.5 text-right font-medium">Ações</th>
+                  <th className="px-4 py-2.5 font-medium">{t('settings.col.field')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('settings.col.type')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('settings.col.level')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('settings.col.rules')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('settings.col.options')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('settings.col.status')}</th>
+                  <th className="px-4 py-2.5 text-right font-medium">{t('settings.col.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading && (
                   <tr>
                     <td colSpan={7} className="px-4 py-16 text-center text-sm text-gray-400">
-                      Carregando campos…
+                      {t('settings.loading')}
                     </td>
                   </tr>
                 )}
@@ -351,10 +340,8 @@ export default function Settings() {
                 {!loading && !error && total === 0 && (
                   <tr>
                     <td colSpan={7} className="px-4 py-16 text-center">
-                      <p className="text-sm font-medium text-gray-700">Nenhum campo cadastrado</p>
-                      <p className="mt-1 text-sm text-gray-400">
-                        Clique em "Novo campo" para criar o primeiro.
-                      </p>
+                      <p className="text-sm font-medium text-gray-700">{t('settings.empty')}</p>
+                      <p className="mt-1 text-sm text-gray-400">{t('settings.emptyHint')}</p>
                     </td>
                   </tr>
                 )}
@@ -366,7 +353,7 @@ export default function Settings() {
                         <p className="font-mono text-xs text-gray-400">{attr.chave}</p>
                       </td>
                       <td className="px-3 py-3 text-gray-700">
-                        {TIPOS.find((t) => t.value === attr.tipoDado)?.label ?? attr.tipoDado}
+                        {t(`tipo.${attr.tipoDado}`)}
                       </td>
                       <td className="px-3 py-3">
                         <span
@@ -376,12 +363,12 @@ export default function Settings() {
                               : 'bg-purple-50 text-purple-700 ring-purple-600/20'
                           }`}
                         >
-                          {attr.nivel === 'produto' ? 'Produto' : 'Variação'}
+                          {attr.nivel === 'produto' ? t('settings.product') : t('settings.variation')}
                         </span>
                       </td>
                       <td className="px-3 py-3 text-gray-600">
                         {attr.validationRules[0]?.obrigatorio ? (
-                          <span className="font-medium text-red-600">Obrigatório</span>
+                          <span className="font-medium text-red-600">{t('settings.form.required')}</span>
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
@@ -422,7 +409,7 @@ export default function Settings() {
                               : 'bg-gray-100 text-gray-500 ring-gray-500/20'
                           }`}
                         >
-                          {attr.status === 'ativo' ? 'Ativo' : 'Arquivado'}
+                          {attr.status === 'ativo' ? t('status.ativo') : t('status.arquivado')}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -436,14 +423,14 @@ export default function Settings() {
                             }}
                             className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
                           >
-                            Editar
+                            {t('common.edit')}
                           </button>
                           {attr.status === 'ativo' && (
                             <button
                               onClick={() => archive(attr)}
                               className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
                             >
-                              Arquivar
+                              {t('settings.archive')}
                             </button>
                           )}
                         </div>
@@ -461,15 +448,13 @@ export default function Settings() {
           <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Novo campo</h2>
-                <p className="mt-0.5 text-xs text-gray-400">
-                  O campo entra no formulário dos produtos com essa categoria
-                </p>
+                <h2 className="text-base font-semibold text-gray-900">{t('settings.newField')}</h2>
+                <p className="mt-0.5 text-xs text-gray-400">{t('settings.modal.subtitle')}</p>
               </div>
               <button
                 onClick={() => setModalOpen(false)}
                 className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Fechar"
+                aria-label={t('common.close')}
               >
                 <XIcon />
               </button>
@@ -479,7 +464,7 @@ export default function Settings() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Nome <span className="text-red-500">*</span>
+                    {t('settings.form.name')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     autoFocus
@@ -492,13 +477,13 @@ export default function Settings() {
                         chave: f.chave === '' || f.chave === normalizeChave(f.nome) ? normalizeChave(nome) : f.chave,
                       }));
                     }}
-                    placeholder="Ex: Voltagem"
+                    placeholder={t('settings.form.namePh')}
                     className={inputCls}
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Chave <span className="text-red-500">*</span>
+                    {t('settings.form.key')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={form.chave}
@@ -512,7 +497,7 @@ export default function Settings() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Tipo
+                    {t('settings.form.type')}
                   </label>
                   <select
                     value={form.tipo_dado}
@@ -525,16 +510,18 @@ export default function Settings() {
                     }
                     className={inputCls}
                   >
-                    {TIPOS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
+                    {(['texto', 'numero', 'booleano', 'lista', 'lista_multipla', 'data'] as AttributeDataType[]).map(
+                      (v) => (
+                        <option key={v} value={v}>
+                          {t(`tipo.${v}`)}
+                        </option>
+                      ),
+                    )}
                   </select>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Nível
+                    {t('settings.form.level')}
                   </label>
                   <select
                     value={form.nivel}
@@ -543,15 +530,15 @@ export default function Settings() {
                     }
                     className={inputCls}
                   >
-                    <option value="produto">Produto</option>
-                    <option value="variacao">Variação</option>
+                    <option value="produto">{t('settings.product')}</option>
+                    <option value="variacao">{t('settings.variation')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="rounded-lg border border-gray-200 p-3">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Regras de validação
+                  {t('settings.form.rules')}
                 </p>
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input
@@ -560,51 +547,51 @@ export default function Settings() {
                     onChange={(e) => setForm((f) => ({ ...f, obrigatorio: e.target.checked }))}
                     className="h-4 w-4 rounded border-gray-300 accent-blue-600"
                   />
-                  Campo obrigatório
+                  {t('settings.form.required')}
                 </label>
                 <div className="mt-3 grid grid-cols-3 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs text-gray-400">Valor mínimo</label>
+                    <label className="mb-1 block text-xs text-gray-400">{t('settings.form.min')}</label>
                     <input
                       type="number"
                       value={form.valor_min}
                       onChange={(e) => setForm((f) => ({ ...f, valor_min: e.target.value }))}
                       disabled={form.tipo_dado !== 'numero'}
-                      placeholder={form.tipo_dado === 'numero' ? 'Ex: 0' : 'Só p/ número'}
+                      placeholder={form.tipo_dado === 'numero' ? t('settings.form.minPh') : t('settings.form.onlyNumber')}
                       className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-300`}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-gray-400">Valor máximo</label>
+                    <label className="mb-1 block text-xs text-gray-400">{t('settings.form.max')}</label>
                     <input
                       type="number"
                       value={form.valor_max}
                       onChange={(e) => setForm((f) => ({ ...f, valor_max: e.target.value }))}
                       disabled={form.tipo_dado !== 'numero'}
-                      placeholder={form.tipo_dado === 'numero' ? 'Ex: 500' : 'Só p/ número'}
+                      placeholder={form.tipo_dado === 'numero' ? t('settings.form.maxPh') : t('settings.form.onlyNumber')}
                       className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-300`}
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs text-gray-400">Tam. máx. (texto)</label>
+                    <label className="mb-1 block text-xs text-gray-400">{t('settings.form.maxLength')}</label>
                     <input
                       type="number"
                       value={form.tamanho_max}
                       onChange={(e) => setForm((f) => ({ ...f, tamanho_max: e.target.value }))}
                       disabled={form.tipo_dado !== 'texto'}
-                      placeholder={form.tipo_dado === 'texto' ? 'Ex: 120' : 'Só p/ texto'}
+                      placeholder={form.tipo_dado === 'texto' ? t('settings.form.maxLengthPh') : t('settings.form.onlyText')}
                       className={`${inputCls} disabled:bg-gray-50 disabled:text-gray-300`}
                     />
                   </div>
                 </div>
                 <div className="mt-3">
                   <label className="mb-1 block text-xs text-gray-400">
-                    Mensagem de erro personalizada
+                    {t('settings.form.customError')}
                   </label>
                   <input
                     value={form.mensagem_erro}
                     onChange={(e) => setForm((f) => ({ ...f, mensagem_erro: e.target.value }))}
-                    placeholder="Ex: Informe uma voltagem válida"
+                    placeholder={t('settings.form.customErrorPh')}
                     className={inputCls}
                   />
                 </div>
@@ -613,7 +600,7 @@ export default function Settings() {
               {needsOptions && (
                 <div className="rounded-lg border border-gray-200 p-3">
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Opções <span className="text-red-500">*</span>
+                    {t('settings.form.options')} <span className="text-red-500">*</span>
                   </p>
                   <div className="space-y-2">
                     {form.opcoes.map((opt, i) => (
@@ -627,7 +614,7 @@ export default function Settings() {
                               return { ...f, opcoes };
                             })
                           }
-                          placeholder={`Opção ${i + 1}`}
+                          placeholder={t('settings.form.optionPh', { n: i + 1 })}
                           className={inputCls}
                         />
                         {form.opcoes.length > 1 && (
@@ -640,7 +627,7 @@ export default function Settings() {
                               }))
                             }
                             className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-red-500"
-                            aria-label="Remover opção"
+                            aria-label={t('settings.form.removeOption')}
                           >
                             <XIcon />
                           </button>
@@ -654,7 +641,7 @@ export default function Settings() {
                     className="mt-2 flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
                   >
                     <PlusIcon />
-                    Adicionar opção
+                    {t('settings.form.addOption')}
                   </button>
                 </div>
               )}
@@ -670,14 +657,14 @@ export default function Settings() {
                   disabled={creating}
                   className="rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
                   className="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {creating ? 'Criando…' : 'Criar campo'}
+                  {creating ? t('settings.form.creating') : t('settings.form.create')}
                 </button>
               </div>
             </form>
@@ -692,16 +679,16 @@ export default function Settings() {
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
                 <h2 className="text-base font-semibold text-gray-900">
-                  Editar campo: {editAttr.nome}
+                  {t('settings.editModal.title')}: {editAttr.nome}
                 </h2>
                 <p className="mt-0.5 font-mono text-xs text-gray-400">
-                  {editAttr.chave} · chave imutável
+                  {editAttr.chave} · {t('settings.editModal.immutableKey')}
                 </p>
               </div>
               <button
                 onClick={() => setEditAttr(null)}
                 className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Fechar"
+                aria-label={t('common.close')}
               >
                 <XIcon />
               </button>
@@ -710,16 +697,16 @@ export default function Settings() {
             <div className="space-y-4 px-5 py-4">
               <div>
                 <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Nome
+                  {t('settings.form.name')}
                 </label>
                 <input value={editNome} onChange={(e) => setEditNome(e.target.value)} className={inputCls} />
               </div>
 
               <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Status</p>
+                  <p className="text-sm font-medium text-gray-900">{t('settings.editModal.status')}</p>
                   <p className="text-xs text-gray-400">
-                    {editAttr.status === 'ativo' ? 'Ativo — usado nos formulários' : 'Arquivado'}
+                    {editAttr.status === 'ativo' ? t('settings.editModal.activeInUse') : t('settings.editModal.archived')}
                   </p>
                 </div>
                 <button
@@ -734,22 +721,22 @@ export default function Settings() {
                   {editBusy
                     ? '…'
                     : editAttr.status === 'ativo'
-                      ? 'Arquivar campo'
-                      : 'Reativar campo'}
+                      ? t('settings.editModal.archive')
+                      : t('settings.editModal.reactivate')}
                 </button>
               </div>
 
               <div className="rounded-lg border border-gray-200 p-3">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-                  Categorias vinculadas
+                  {t('settings.editModal.linkedCategories')}
                 </p>
                 <p className="mb-2 text-xs text-gray-400">
-                  O campo aparece no formulário dos produtos destas categorias.
+                  {t('settings.editModal.linkedHint')}
                 </p>
                 {linksLoading ? (
-                  <p className="text-sm text-gray-400">Carregando categorias…</p>
+                  <p className="text-sm text-gray-400">{t('settings.editModal.loadingCategories')}</p>
                 ) : categories.length === 0 ? (
-                  <p className="text-sm text-gray-400">Nenhuma categoria cadastrada.</p>
+                  <p className="text-sm text-gray-400">{t('settings.editModal.noCategories')}</p>
                 ) : (
                   <div className="space-y-1.5">
                     {categories.map((c) => {
@@ -761,7 +748,7 @@ export default function Settings() {
                         >
                           <span className="font-medium text-gray-800">{c.nome}</span>
                           <span className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400">{linked ? 'Vinculado' : 'Não vinculado'}</span>
+                            <span className="text-xs text-gray-400">{linked ? t('settings.editModal.linked') : t('settings.editModal.notLinked')}</span>
                             <button
                               type="button"
                               onClick={() => toggleCategoryLink(c.id)}
@@ -769,7 +756,7 @@ export default function Settings() {
                               className={`relative h-5 w-9 rounded-full transition disabled:opacity-40 ${
                                 linked ? 'bg-blue-600' : 'bg-gray-300'
                               }`}
-                              aria-label={`Vincular ${c.nome}`}
+                              aria-label={`${t('settings.editModal.link')} ${c.nome}`}
                             >
                               <span
                                 className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${
@@ -788,7 +775,7 @@ export default function Settings() {
               {(editAttr.tipoDado === 'lista' || editAttr.tipoDado === 'lista_multipla') && (
                 <div className="rounded-lg border border-gray-200 p-3">
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
-                    Adicionar opção
+                    {t('settings.form.addOption')}
                   </p>
                   <div className="flex gap-2">
                     <input
@@ -800,7 +787,7 @@ export default function Settings() {
                           addOption(editAttr);
                         }
                       }}
-                      placeholder="Ex: 220V"
+                      placeholder={t('settings.form.optionPh2')}
                       className={inputCls}
                     />
                     <button
@@ -808,7 +795,7 @@ export default function Settings() {
                       disabled={editBusy || !newOption.trim()}
                       className="shrink-0 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Adicionar
+                      {t('settings.editModal.add')}
                     </button>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -830,14 +817,14 @@ export default function Settings() {
                   disabled={editBusy}
                   className="rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
                 >
-                  Fechar
+                  {t('common.close')}
                 </button>
                 <button
                   onClick={saveEdit}
                   disabled={editBusy || !editNome.trim()}
                   className="rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Salvar nome
+                  {t('settings.editModal.saveName')}
                 </button>
               </div>
             </div>

@@ -1,13 +1,12 @@
 import type { ProductStatus } from '../api/types';
+import { useI18n } from '../i18n';
+import type { Dict } from '../i18n';
 
-export const STATUS_BADGES: Record<
-  ProductStatus,
-  { label: string; cls: string }
-> = {
-  ativo: { label: 'Active', cls: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },
-  rascunho: { label: 'Draft', cls: 'bg-gray-100 text-gray-600 ring-gray-500/20' },
-  inativo: { label: 'Inactive', cls: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
-  descontinuado: { label: 'Discontinued', cls: 'bg-gray-100 text-gray-500 ring-gray-500/10' },
+export const STATUS_CLS: Record<ProductStatus, string> = {
+  ativo: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
+  rascunho: 'bg-gray-100 text-gray-600 ring-gray-500/20',
+  inativo: 'bg-amber-50 text-amber-700 ring-amber-600/20',
+  descontinuado: 'bg-gray-100 text-gray-500 ring-gray-500/10',
 };
 
 export const ALL_STATUSES: ProductStatus[] = [
@@ -17,29 +16,25 @@ export const ALL_STATUSES: ProductStatus[] = [
   'descontinuado',
 ];
 
-export const TIPO_LABELS: Record<string, string> = {
-  texto: 'Texto',
-  numero: 'Número',
-  booleano: 'Sim/Não',
-  lista: 'Lista',
-  lista_multipla: 'Lista múltipla',
-  data: 'Data',
-};
+export function tipoLabel(t: (k: keyof Dict) => string, tipo: string): string {
+  const key = `tipo.${tipo}` as keyof Dict;
+  return (t as (k: string) => string)(key) === key ? tipo : t(key);
+}
 
-export function formatValue(valor: unknown): string {
+export function formatValue(t: (k: keyof Dict) => string, valor: unknown): string {
   if (valor === null || valor === undefined || valor === '') return '—';
   if (Array.isArray(valor)) return valor.join(', ');
-  if (typeof valor === 'boolean') return valor ? 'Sim' : 'Não';
+  if (typeof valor === 'boolean') return valor ? t('common.yes') : t('common.no');
   return String(valor);
 }
 
 export function StatusBadge({ status }: { status: ProductStatus }) {
-  const b = STATUS_BADGES[status];
+  const { t } = useI18n();
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${b.cls}`}
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_CLS[status]}`}
     >
-      {b.label}
+      {t(`status.${status}`)}
     </span>
   );
 }
@@ -61,11 +56,4 @@ export function SummaryRow({
       </dd>
     </div>
   );
-}
-
-export function formatCurrency(valor: string, moeda: string): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: moeda,
-  }).format(Number(valor));
 }

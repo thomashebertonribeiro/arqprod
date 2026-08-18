@@ -4,7 +4,8 @@ import type {
   VariantPriceRow,
   VariantStockRow,
 } from '../api/types';
-import { formatCurrency, formatValue, StatusBadge } from './ui';
+import { useI18n } from '../i18n';
+import { formatValue, StatusBadge } from './ui';
 
 export default function VariantsTable({
   variants,
@@ -15,10 +16,12 @@ export default function VariantsTable({
   variantAttrs: AttributeDef[];
   data: Record<string, { stock: VariantStockRow[]; prices: VariantPriceRow[] }>;
 }) {
+  const { t, formatCurrency } = useI18n();
+
   if (variants.length === 0) {
     return (
       <p className="px-5 py-6 text-sm text-gray-400">
-        Nenhuma variação. Crie via{' '}
+        {t('variants.none')}{' '}
         <span className="font-mono text-xs">POST /products/:id/variants</span>.
       </p>
     );
@@ -32,12 +35,12 @@ export default function VariantsTable({
         <table className="min-w-full divide-y divide-gray-100">
           <thead>
             <tr className="bg-gray-50/70 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-              <th className="px-5 py-2.5 font-medium">Variação</th>
-              <th className="px-3 py-2.5 font-medium">EAN</th>
-              <th className="px-3 py-2.5 font-medium">Peso</th>
-              <th className="px-3 py-2.5 font-medium">Estoque</th>
-              <th className="px-3 py-2.5 font-medium">Preço</th>
-              <th className="px-5 py-2.5 font-medium">Status</th>
+              <th className="px-5 py-2.5 font-medium">{t('variants.variation')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('variants.ean')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('variants.weight')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('variants.stock')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('variants.price')}</th>
+              <th className="px-5 py-2.5 font-medium">{t('variants.status')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -58,9 +61,9 @@ export default function VariantsTable({
                             .join(' · ')
                         : Object.keys(v.values).length > 0
                           ? Object.entries(v.values)
-                              .map(([k, val]) => `${k}: ${formatValue(val)}`)
+                              .map(([k, val]) => `${k}: ${formatValue(t, val)}`)
                               .join(' · ')
-                          : 'Sem combinação'}
+                          : t('variants.noCombination')}
                     </p>
                     {variantAttrs.length > 0 && (
                       <p className="mt-1 text-xs text-gray-500">
@@ -68,7 +71,7 @@ export default function VariantsTable({
                           .map((a) => {
                             const raw = v.values[a.chave];
                             return raw !== undefined
-                              ? `${a.nome}: ${formatValue(raw)}`
+                              ? `${a.nome}: ${formatValue(t, raw)}`
                               : null;
                           })
                           .filter(Boolean)
@@ -89,10 +92,10 @@ export default function VariantsTable({
                           totalStock === 0 ? 'font-medium text-red-600' : 'text-gray-700'
                         }
                       >
-                        {totalStock} in stock
+                        {totalStock} {t('variants.inStock')}
                       </span>
                     ) : (
-                      <span className="text-gray-400">Not tracked</span>
+                      <span className="text-gray-400">{t('variants.notTracked')}</span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-gray-700">
@@ -113,7 +116,7 @@ export default function VariantsTable({
       </div>
       {hasStock && (
         <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-2.5 text-xs text-gray-500">
-          Estoque por armazém:{' '}
+          {t('variants.byWarehouse')}{' '}
           {variants
             .flatMap((v) =>
               (data[v.id]?.stock ?? []).map(

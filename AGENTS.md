@@ -16,7 +16,8 @@
 
 ## Estado do Trabalho
 ### Concluído
-- **Menu de ações por produto (tarefa atual):** botão ⋮ (3 pontos) na última coluna de cada linha em `Products.tsx` com dropdown "Editar" (navega para `/products/:id`) e "Excluir" (confirm → `DELETE /products/:id` → recarrega lista). Backend ganhou `DELETE /products/:id` (`remove` no service com `getOwned` + cascade via FK; controller retorna `{id}`; 404 se não existir). API `deleteProduct` em `api/products.ts`. Testado local (criar→excluir→404) e em produção (temp criado e excluído; 3 produtos reais intactos). Commit `feat: menu de ações (⋯) por produto na listagem com editar e excluir + endpoint DELETE /products/:id`, deploy api+web feito.
+- **Upload de imagens (tarefa atual):** botão "Adicionar imagem" na galeria de `ProductDetail.tsx` (upload multipart → recarrega o produto; empty state com dica do formato; erro de validação exibido). Backend: `POST /products/:id/images/upload` (FileInterceptor, limite 12MB) valida com **sharp** — apenas JPEG/PNG (mimetype + leitura real), **exatamente 1200x1200px**, espaço de cor **RGB** (`metadata().space === 'srgb'`, rejeita CMYK/cinza); arquivo salvo em `uploads/{uuid}.{ext}` (volume `uploads_data:/app/uploads` no compose) e servido publicamente via `GET /api/uploads/:file` (`UploadsController` com `@Public()`, nome sanitizado com basename + regex uuid, 404 em traversal, Cache-Control 1 ano). Commit `feat: upload de imagens...` + fix nginx (`location ^~ /api/` para sobrepor a regex de estáticos que causava 404 em imagens) — deploy produção feito, verificado: upload 200, servida via :3080 200 image/jpeg, 800x800 rejeitado, CMYK rejeitado, produto temp excluído.
+- **Menu de ações por produto (tarefa anterior):** botão ⋮ (3 pontos) na última coluna de cada linha em `Products.tsx` com dropdown "Editar" (navega para `/products/:id`) e "Excluir" (confirm → `DELETE /products/:id` → recarrega lista). Backend ganhou `DELETE /products/:id` (`remove` no service com `getOwned` + cascade via FK; controller retorna `{id}`; 404 se não existir). API `deleteProduct` em `api/products.ts`. Testado local (criar→excluir→404) e em produção (temp criado e excluído; 3 produtos reais intactos). Commit `feat: menu de ações (⋯) por produto na listagem com editar e excluir + endpoint DELETE /products/:id`, deploy api+web feito.
 - **Campos globais (tarefa anterior):** `findOneEnriched` inclui `fields` (backend, commitado); `ProductDetail`/`AttrRow`/`VariantsTable` usam `p.fields`; `types.ts` ganhou `fields: AttributeDef[]`. Deploy produção + verificação ponta a ponta: campo `peso_liquido` criado sem vínculo aparece no produto, valor salvo (`0.18`), validação global ativa (negativo → 400).
 - **Gestão de categorias (tarefa atual):** aba **Categorias** em Configurações (`Settings.tsx` com tabs Campos|Categorias), componente `CategoriesSection.tsx` com: listagem em árvore com indentação (flatList + `__depth`), contador de subcategorias, modal "Nova categoria" (nome com slug auto-normalizado, categoria pai, ordem), editar (nome/slug/ordem), excluir com confirm (avisa que produtos não são apagados), empty state, loading e erros. API em `api/categories.ts` (listCategories tree, createCategory, updateCategory, deleteCategory, normalizeSlug).
 - Build frontend OK (236.79 kB); ciclo CRUD testado local (criar raiz→filha→editar→excluir) e em produção (criar+excluir verificados; restou `Eletrônicos`).
@@ -34,12 +35,17 @@
 3. (Opcional) Contador de produtos por categoria, mover/reordenar com drag & drop, vínculo de campos por categoria (já existe no backend: `linkAttributeToCategory`).
 
 ## Arquivos Relevantes
+- `backend/src/uploads/uploads.controller.ts`: **novo** — `GET /api/uploads/:file` público, sanitização anti-traversal, Cache-Control 1 ano.
+- `backend/src/products/products.service.ts`: `uploadImage` com validação sharp (JPEG/PNG, 1200x1200, sRGB) + `remove` (DELETE produto).
+- `frontend/src/pages/ProductDetail.tsx`: galeria com botão "Adicionar imagem" (multipart) e empty state.
+- `frontend/src/api/products.ts`: `uploadProductImage` (FormData, sem Content-Type) e `deleteProduct`.
+- `frontend/nginx.conf`: `location ^~ /api/` (sobrepõe regex de estáticos) — fix do 404 de imagens.
+- `docker-compose.deploy.yml`: volume `uploads_data:/app/uploads` (espelhado no override do servidor).
 - `frontend/src/components/CategoriesSection.tsx`: **nova** — gestão de categorias (tabela árvore + modais criar/editar + excluir).
 - `frontend/src/api/categories.ts`: **novo** — cliente CRUD de categorias + normalizeSlug.
 - `frontend/src/pages/Settings.tsx`: tabs Campos|Categorias (seção campos com cabeçalho restaurado; modais dentro do main pois são `position: fixed`).
-- `frontend/src/pages/ProductDetail.tsx` + `components/AttrRow.tsx` + `components/VariantsTable.tsx`: usam `p.fields` (campos globais).
+- `frontend/src/components/AttrRow.tsx` + `components/VariantsTable.tsx`: usam `p.fields` (campos globais).
 - `backend/src/products/products.service.ts`: `findOneEnriched` com `fields`.
 - `backend/src/categories/dto.ts`: Create/UpdateCategoryDto (nome*, slug*, parent_id?, ordem?).
 - `frontend/src/api/types.ts`: `ProductDetail.fields: AttributeDef[]`.
-- `docker-compose.deploy.yml` (local) = `/opt/arqprod/docker-compose.override.yml` (servidor); `frontend/nginx.conf` proxy `/api`.
 - GitHub: `thomashebertonribeiro/arqprod` (main, público).

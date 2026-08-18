@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { setToken } from '../api/client';
 import { login } from '../api/products';
+import { useI18n } from '../i18n';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export default function Login() {
       setToken(res.access_token);
       navigate('/products');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha no login');
+      setError(err instanceof Error ? err.message : t('login.failed'));
     } finally {
       setLoading(false);
     }
@@ -33,14 +35,14 @@ export default function Login() {
             A
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">Arqprod</h1>
-          <p className="mt-1 text-sm text-gray-500">Painel de gestão de produtos</p>
+          <p className="mt-1 text-sm text-gray-500">{t('login.subtitle')}</p>
         </div>
         <form
           onSubmit={submit}
           className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
         >
           <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="email">
-            Email
+            {t('login.email')}
           </label>
           <input
             id="email"
@@ -52,7 +54,7 @@ export default function Login() {
             className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
           <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="senha">
-            Senha
+            {t('login.password')}
           </label>
           <input
             id="senha"
@@ -71,11 +73,9 @@ export default function Login() {
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Entrando…' : 'Entrar'}
+            {loading ? t('login.signingIn') : t('login.signIn')}
           </button>
-          <p className="mt-4 text-center text-xs text-gray-400">
-            Seed padrão: admin@exemplo.com / admin123456
-          </p>
+          <p className="mt-4 text-center text-xs text-gray-400">{t('login.seedHint')}</p>
         </form>
       </div>
     </div>
