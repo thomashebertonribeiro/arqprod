@@ -12,13 +12,19 @@ export default function VariantsTable({
   variantAttrs,
   data,
   onPriceStock,
+  onEdit,
+  onDelete,
 }: {
   variants: ProductVariantDetail[];
   variantAttrs: AttributeDef[];
   data: Record<string, { stock: VariantStockRow[]; prices: VariantPriceRow[] }>;
   onPriceStock?: (variantId: string) => void;
+  onEdit?: (variantId: string) => void;
+  onDelete?: (variantId: string) => void;
 }) {
   const { t, formatCurrency } = useI18n();
+
+  const hasActions = Boolean(onPriceStock || onEdit || onDelete);
 
   if (variants.length === 0) {
     return (
@@ -43,7 +49,7 @@ export default function VariantsTable({
               <th className="px-3 py-2.5 font-medium">{t('variants.stock')}</th>
               <th className="px-3 py-2.5 font-medium">{t('variants.price')}</th>
               <th className="px-3 py-2.5 font-medium">{t('variants.status')}</th>
-              {onPriceStock && <th className="px-5 py-2.5 font-medium" />}
+              {hasActions && <th className="px-5 py-2.5 font-medium" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -111,14 +117,34 @@ export default function VariantsTable({
                   <td className="px-5 py-3">
                     <StatusBadge status={v.status === 'ativo' ? 'ativo' : 'inativo'} />
                   </td>
-                  {onPriceStock && (
-                    <td className="px-5 py-3 text-right">
-                      <button
-                        onClick={() => onPriceStock(v.id)}
-                        className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
-                      >
-                        {t('variants.priceStock')}
-                      </button>
+                  {hasActions && (
+                    <td className="px-5 py-3">
+                      <div className="flex items-center justify-end gap-1.5">
+                        {onPriceStock && (
+                          <button
+                            onClick={() => onPriceStock(v.id)}
+                            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+                          >
+                            {t('variants.priceStock')}
+                          </button>
+                        )}
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(v.id)}
+                            className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+                          >
+                            {t('common.edit')}
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(v.id)}
+                            className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50"
+                          >
+                            {t('common.delete')}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>

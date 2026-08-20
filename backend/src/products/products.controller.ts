@@ -335,6 +335,18 @@ export class ProductsController {
     return this.service.updateVariant(identity.orgId, id, variantId, dto, identity.userId);
   }
 
+  @Delete(':id/variants/:variantId')
+  @ApiOperation({
+    summary: 'Excluir variação (cascade em preços, estoques e valores de atributos)',
+  })
+  removeVariant(
+    @CurrentIdentity() identity: { orgId: string; userId?: string },
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+  ) {
+    return this.service.removeVariant(identity.orgId, id, variantId, identity.userId);
+  }
+
   @Get(':id/variants/:variantId/attribute-values')
   @ApiOperation({ summary: 'Valores de atributos de nível variação' })
   getVariantAttributeValues(

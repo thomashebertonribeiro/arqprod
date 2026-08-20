@@ -9,7 +9,7 @@ import {
   unlinkAttributeFromCategory,
   updateAttribute,
 } from '../api/attributes';
-import { listCategories, listBrands, createBrand, listManufacturers, createManufacturer } from '../api/products';
+import { listCategories, listBrands, createBrand, updateBrand, deleteBrand, listManufacturers, createManufacturer, updateManufacturer, deleteManufacturer } from '../api/products';
 import type { AttributeDef, AttributeDataType, NamedRef, Paginated } from '../api/types';
 import CategoriesSection from '../components/CategoriesSection';
 import Nav from '../components/Nav';
@@ -165,10 +165,50 @@ export default function Settings() {
     }
   };
 
+  const updateBrandLocal = async (id: string, nome: string) => {
+    setRefBusy(true);
+    try {
+      await updateBrand(id, nome);
+      await loadRefs();
+    } finally {
+      setRefBusy(false);
+    }
+  };
+
+  const deleteBrandLocal = async (id: string) => {
+    setRefBusy(true);
+    try {
+      await deleteBrand(id);
+      await loadRefs();
+    } finally {
+      setRefBusy(false);
+    }
+  };
+
   const createManufacturerLocal = async (nome: string) => {
     setRefBusy(true);
     try {
       await createManufacturer(nome);
+      await loadRefs();
+    } finally {
+      setRefBusy(false);
+    }
+  };
+
+  const updateManufacturerLocal = async (id: string, nome: string) => {
+    setRefBusy(true);
+    try {
+      await updateManufacturer(id, nome);
+      await loadRefs();
+    } finally {
+      setRefBusy(false);
+    }
+  };
+
+  const deleteManufacturerLocal = async (id: string) => {
+    setRefBusy(true);
+    try {
+      await deleteManufacturer(id);
       await loadRefs();
     } finally {
       setRefBusy(false);
@@ -330,6 +370,8 @@ export default function Settings() {
               empty={t('settings.brands.empty')}
               items={brands}
               onCreate={createBrandLocal}
+              onUpdate={updateBrandLocal}
+              onDelete={deleteBrandLocal}
               creating={refBusy}
             />
             <RefListSection
@@ -338,6 +380,8 @@ export default function Settings() {
               empty={t('settings.manufacturers.empty')}
               items={manufacturers}
               onCreate={createManufacturerLocal}
+              onUpdate={updateManufacturerLocal}
+              onDelete={deleteManufacturerLocal}
               creating={refBusy}
             />
           </div>

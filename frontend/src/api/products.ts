@@ -157,12 +157,28 @@ export function createBrand(nome: string) {
   return api<NamedRef>('/brands', { method: 'POST', body: JSON.stringify({ nome }) });
 }
 
+export function updateBrand(id: string, nome: string) {
+  return api<NamedRef>(`/brands/${id}`, { method: 'PATCH', body: JSON.stringify({ nome }) });
+}
+
+export function deleteBrand(id: string) {
+  return api<{ id: string }>(`/brands/${id}`, { method: 'DELETE' });
+}
+
 export function listManufacturers() {
   return api<{ data: NamedRef[] }>('/manufacturers');
 }
 
 export function createManufacturer(nome: string) {
   return api<NamedRef>('/manufacturers', { method: 'POST', body: JSON.stringify({ nome }) });
+}
+
+export function updateManufacturer(id: string, nome: string) {
+  return api<NamedRef>(`/manufacturers/${id}`, { method: 'PATCH', body: JSON.stringify({ nome }) });
+}
+
+export function deleteManufacturer(id: string) {
+  return api<{ id: string }>(`/manufacturers/${id}`, { method: 'DELETE' });
 }
 
 export function listChannels() {
@@ -225,11 +241,17 @@ export function createVariant(
 export function updateVariant(
   productId: string,
   variantId: string,
-  patch: { sku?: string; ean_gtin?: string | null; status?: 'ativo' | 'inativo' },
+  patch: { sku?: string; ean_gtin?: string | null; peso_kg?: number | null; status?: 'ativo' | 'inativo' },
 ) {
   return api<{ id: string; sku: string }>(`/products/${productId}/variants/${variantId}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
+  });
+}
+
+export function deleteVariant(productId: string, variantId: string) {
+  return api<{ id: string }>(`/products/${productId}/variants/${variantId}`, {
+    method: 'DELETE',
   });
 }
 

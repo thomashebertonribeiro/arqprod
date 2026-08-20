@@ -8,6 +8,8 @@ export default function RefListSection({
   empty,
   items,
   onCreate,
+  onUpdate,
+  onDelete,
   creating,
 }: {
   title: string;
@@ -15,12 +17,16 @@ export default function RefListSection({
   empty: string;
   items: NamedRef[];
   onCreate: (nome: string) => Promise<void>;
+  onUpdate: (id: string, nome: string) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
   creating?: boolean;
 }) {
   const { t } = useI18n();
   const [nome, setNome] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingNome, setEditingNome] = useState('');
 
   async function submit() {
     if (!nome.trim() || busy || creating) return;
@@ -29,6 +35,33 @@ export default function RefListSection({
     try {
       await onCreate(nome.trim());
       setNome('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('settings.loadFailed'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveEdit() {
+    if (!editingId || !editingNome.trim() || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onUpdate(editingId, editingNome.trim());
+      setEditingId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('settings.loadFailed'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(item: NamedRef) {
+    if (!window.confirm(t('settings.ref.deleteConfirm', { nome: item.nome }))) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onDelete(item.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('settings.loadFailed'));
     } finally {
@@ -76,9 +109,61 @@ export default function RefListSection({
       ) : (
         <div className="divide-y divide-gray-100">
           {items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between px-5 py-3 text-sm">
-              <span className="font-medium text-gray-900">{item.nome}</span>
-              <span className="font-mono text-xs text-gray-400">{item.id.slice(0, 8)}…</span>
+            <div key={item.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+              {editingId === item.id ? (
+                <>
+                  <input
+                    value={editingNome}
+                    onChange={(e) => setEditingNome(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveEdit();
+                      }
+                    }}
+                    className="w-full rounded-lg border border-gray-300 px-2.5 py-1.5 outline-none transition focus:border-blue-500"
+                  />
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      onClick={saveEdit}
+                      disabled={busy || !editingNome.trim()}
+                      className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {busy ? t('common.saving') : t('common.save')}
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-gray-900">{item.nome}</span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setEditingId(item.id);
+                        setEditingNome(item.nome);
+                        setError('');
+                      }}
+                      disabled={busy}
+                      className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
+                    >
+                      {t('common.edit')}
+                    </button>
+                    <button
+                      onClick={() => remove(item)}
+                      disabled={busy}
+                      className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-40"
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>

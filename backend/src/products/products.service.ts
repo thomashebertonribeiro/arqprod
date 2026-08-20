@@ -574,6 +574,19 @@ export class ProductsService {
     return variant;
   }
 
+  async removeVariant(orgId: string, productId: string, variantId: string, userId?: string) {
+    const product = await this.getOwned(orgId, productId);
+    const variant = await this.variants.findOne({
+      where: { id: variantId, productId: product.id },
+    });
+    if (!variant) throw new NotFoundException('Variação não encontrada');
+
+    await this.variants.delete(variant.id);
+    await this.rebuildAttributesCache(product);
+    await this.recordAudit(orgId, productId, userId, 'variant_deleted', { variant_id: variant.id, sku: variant.sku });
+    return { id: variant.id };
+  }
+
   /**
    * Salva valores de atributos de NÍVEL produto.
    * Rejeita atributos de nível variação (regra de negócio #3).

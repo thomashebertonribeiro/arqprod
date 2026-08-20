@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import {
   addProductTags,
   createVariant,
+  deleteVariant,
   duplicateProduct,
   getProduct,
   getProductAudits,
@@ -123,6 +124,16 @@ export default function ProductDetail() {
   const [psError, setPsError] = useState('');
   const [psPrices, setPsPrices] = useState<Record<string, string>>({});
   const [psStocks, setPsStocks] = useState<Record<string, string>>({});
+
+  const [editVariantId, setEditVariantId] = useState<string | null>(null);
+  const [editVariantForm, setEditVariantForm] = useState({
+    sku: '',
+    ean_gtin: '',
+    peso_kg: '',
+    status: 'ativo' as 'ativo' | 'inativo',
+  });
+  const [editVariantBusy, setEditVariantBusy] = useState(false);
+  const [editVariantError, setEditVariantError] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -376,6 +387,51 @@ export default function ProductDetail() {
       setPsError(err instanceof Error ? err.message : t('detail.saveFailed'));
     } finally {
       setPsSaving(false);
+    }
+  }
+
+  function openEditVariant(variantId: string) {
+    const v = product?.variants.find((x) => x.id === variantId);
+    if (!v) return;
+    setEditVariantForm({
+      sku: v.sku,
+      ean_gtin: v.ean_gtin ?? '',
+      peso_kg: v.peso_kg ?? '',
+      status: v.status,
+    });
+    setEditVariantError('');
+    setEditVariantId(variantId);
+  }
+
+  async function saveEditVariant() {
+    if (!product || !editVariantId) return;
+    setEditVariantBusy(true);
+    setEditVariantError('');
+    try {
+      await updateVariant(product.id, editVariantId, {
+        sku: editVariantForm.sku.trim(),
+        ean_gtin: editVariantForm.ean_gtin.trim() || null,
+        peso_kg: editVariantForm.peso_kg ? Number(editVariantForm.peso_kg) : null,
+        status: editVariantForm.status,
+      });
+      await load();
+      setEditVariantId(null);
+    } catch (err) {
+      setEditVariantError(err instanceof Error ? err.message : t('detail.saveFailed'));
+    } finally {
+      setEditVariantBusy(false);
+    }
+  }
+
+  async function confirmDeleteVariant(variantId: string) {
+    if (!product) return;
+    const v = product.variants.find((x) => x.id === variantId);
+    if (!window.confirm(t('detail.deleteVariantConfirm', { sku: v?.sku ?? '' }))) return;
+    try {
+      await deleteVariant(product.id, variantId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('detail.saveFailed'));
     }
   }
 
@@ -971,6 +1027,8 @@ export default function ProductDetail() {
                 variantAttrs={variantAttrs}
                 data={variantData}
                 onPriceStock={openPsModal}
+                onEdit={openEditVariant}
+                onDelete={confirmDeleteVariant}
               />
             </section>
           </div>
@@ -1147,6 +1205,82 @@ export default function ProductDetail() {
                 className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
               >
                 {variantBusy ? t('common.saving') : t('common.create')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editVariantId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">{t('detail.editVariant')}</h3>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-xs text-gray-500">{t('detail.variantSku')}</label>
+                <input
+                  value={editVariantForm.sku}
+                  onChange={(e) => setEditVariantForm((f) => ({ ...f, sku: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm outline-none transition focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">{t('detail.ean')}</label>
+                <input
+                  value={editVariantForm.ean_gtin}
+                  onChange={(e) => setEditVariantForm((f) => ({ ...f, ean_gtin: e.target.value }))}
+                  placeholder={t('detail.eanPh')}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-mono outline-none transition focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">{t('detail.netWeight')} (kg)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={editVariantForm.peso_kg}
+                  onChange={(e) => setEditVariantForm((f) => ({ ...f, peso_kg: e.target.value }))}
+                  placeholder="0.000"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm outline-none transition focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">{t('variants.status')}</label>
+                <select
+                  value={editVariantForm.status}
+                  onChange={(e) =>
+                    setEditVariantForm((f) => ({
+                      ...f,
+                      status: e.target.value as 'ativo' | 'inativo',
+                    }))
+                  }
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm outline-none transition focus:border-blue-500"
+                >
+                  <option value="ativo">{t('status.ativo')}</option>
+                  <option value="inativo">{t('status.inativo')}</option>
+                </select>
+              </div>
+              {editVariantError && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {editVariantError}
+                </p>
+              )}
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setEditVariantId(null)}
+                disabled={editVariantBusy}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={saveEditVariant}
+                disabled={editVariantBusy || !editVariantForm.sku.trim()}
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+              >
+                {editVariantBusy ? t('common.saving') : t('detail.save')}
               </button>
             </div>
           </div>
