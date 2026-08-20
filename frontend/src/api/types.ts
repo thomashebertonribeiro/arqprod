@@ -5,6 +5,11 @@ export interface ProductListItem {
   nome: string;
   sku_base: string | null;
   sku: string | null;
+  ean_gtin: string | null;
+  ncm: string | null;
+  cest: string | null;
+  custo: string | null;
+  descricao: string | null;
   status: ProductStatus;
   category: { id: string; nome: string } | null;
   category_id: string | null;
@@ -101,6 +106,10 @@ export interface ProductDetail {
   nome: string;
   sku_base: string | null;
   sku: string | null;
+  ean_gtin: string | null;
+  ncm: string | null;
+  cest: string | null;
+  custo: string | null;
   status: ProductStatus;
   category: { id: string; nome: string } | null;
   category_id: string | null;

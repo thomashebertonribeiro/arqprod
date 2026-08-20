@@ -55,6 +55,18 @@ export class Product {
   @Column({ name: 'sku_base', type: 'varchar', length: 120, nullable: true })
   skuBase: string | null;
 
+  @Column({ name: 'ean_gtin', type: 'varchar', length: 40, nullable: true })
+  eanGtin: string | null;
+
+  @Column({ type: 'varchar', length: 12, nullable: true })
+  ncm: string | null;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  cest: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true })
+  custo: string | null;
+
   @Column({ default: 'rascunho' })
   status: ProductStatus;
 

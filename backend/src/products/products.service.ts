@@ -57,6 +57,10 @@ export class ProductsService {
       nome: dto.nome,
       descricao: dto.descricao ?? null,
       skuBase: dto.sku_base ?? null,
+      eanGtin: dto.ean_gtin ?? null,
+      ncm: dto.ncm ?? null,
+      cest: dto.cest ?? null,
+      custo: dto.custo ?? null,
       categoryId: dto.category_id ?? null,
       supplierId: dto.supplier_id ?? null,
       status: (dto.status as Product['status']) ?? 'rascunho',
@@ -119,6 +123,10 @@ export class ProductsService {
       fields,
       descricao: base.descricao,
       sku_base: base.skuBase,
+      ean_gtin: base.eanGtin,
+      ncm: base.ncm,
+      cest: base.cest,
+      custo: base.custo,
       atributos: base.atributos,
       origem_integracao: base.origemIntegracao,
       images: base.images.map((i) => ({
@@ -154,6 +162,10 @@ export class ProductsService {
     const product = await this.getOwned(orgId, id);
     if (dto.nome !== undefined) product.nome = dto.nome;
     if (dto.descricao !== undefined) product.descricao = dto.descricao ?? null;
+    if (dto.ean_gtin !== undefined) product.eanGtin = dto.ean_gtin ?? null;
+    if (dto.ncm !== undefined) product.ncm = dto.ncm ?? null;
+    if (dto.cest !== undefined) product.cest = dto.cest ?? null;
+    if (dto.custo !== undefined) product.custo = dto.custo ?? null;
     if (dto.category_id !== undefined) product.categoryId = dto.category_id || null;
     if (dto.supplier_id !== undefined) product.supplierId = dto.supplier_id || null;
     if (dto.status !== undefined) product.status = dto.status as Product['status'];
@@ -560,6 +572,11 @@ export class ProductsService {
         nome: p.nome,
         sku_base: p.skuBase,
         sku: primaryVariant?.sku ?? p.skuBase ?? null,
+        ean_gtin: p.eanGtin ?? primaryVariant?.eanGtin ?? null,
+        ncm: p.ncm,
+        cest: p.cest,
+        custo: p.custo,
+        descricao: p.descricao,
         status: p.status,
         category: p.category,
         category_id: p.categoryId,

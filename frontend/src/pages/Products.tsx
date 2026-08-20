@@ -76,7 +76,7 @@ function KebabIcon() {
 
 export default function Products() {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const [data, setData] = useState<Paginated<ProductListItem> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,6 +94,10 @@ export default function Products() {
     nome: '',
     sku_base: '',
     descricao: '',
+    ean_gtin: '',
+    ncm: '',
+    cest: '',
+    custo: '',
     status: 'rascunho' as ProductStatus,
     category_id: '',
     supplier_id: '',
@@ -180,7 +184,7 @@ export default function Products() {
   };
 
   const openModal = () => {
-    setForm({ nome: '', sku_base: '', descricao: '', status: 'rascunho', category_id: '', supplier_id: '' });
+    setForm({ nome: '', sku_base: '', descricao: '', ean_gtin: '', ncm: '', cest: '', custo: '', status: 'rascunho', category_id: '', supplier_id: '' });
     setFormError('');
     setModalOpen(true);
   };
@@ -198,6 +202,10 @@ export default function Products() {
         nome: form.nome.trim(),
         sku_base: form.sku_base.trim() || undefined,
         descricao: form.descricao.trim() || undefined,
+        ean_gtin: form.ean_gtin.trim() || undefined,
+        ncm: form.ncm.trim() || undefined,
+        cest: form.cest.trim() || undefined,
+        custo: form.custo.trim() || undefined,
         status: form.status,
         category_id: form.category_id || undefined,
         supplier_id: form.supplier_id || undefined,
@@ -329,6 +337,11 @@ export default function Products() {
                     />
                   </th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.product')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.description')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.ean')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.ncm')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.cest')}</th>
+                  <th className="px-3 py-2.5 font-medium">{t('products.col.cost')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.status')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.inventory')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.channels')}</th>
@@ -401,6 +414,23 @@ export default function Products() {
                             </p>
                           </div>
                         </div>
+                      </td>
+                      <td className="max-w-[240px] px-3 py-2.5">
+                        <p className="truncate text-sm text-gray-500" title={p.descricao ?? undefined}>
+                          {p.descricao || <span className="text-gray-400">—</span>}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-gray-600">
+                        {p.ean_gtin || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-gray-600">
+                        {p.ncm || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-gray-600">
+                        {p.cest || <span className="text-gray-400">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5 text-sm text-gray-700">
+                        {p.custo ? formatCurrency(p.custo, 'BRL') : <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-3 py-2.5">
                         <span
@@ -596,6 +626,56 @@ export default function Products() {
                         </option>
                       ))}
                     </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      {t('products.form.ean')}
+                    </label>
+                    <input
+                      value={form.ean_gtin}
+                      onChange={(e) => setForm((f) => ({ ...f, ean_gtin: e.target.value }))}
+                      placeholder={t('products.form.eanPh')}
+                      className={`${inputCls} font-mono`}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      {t('products.form.ncm')}
+                    </label>
+                    <input
+                      value={form.ncm}
+                      onChange={(e) => setForm((f) => ({ ...f, ncm: e.target.value }))}
+                      placeholder={t('products.form.ncmPh')}
+                      className={`${inputCls} font-mono`}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      {t('products.form.cest')}
+                    </label>
+                    <input
+                      value={form.cest}
+                      onChange={(e) => setForm((f) => ({ ...f, cest: e.target.value }))}
+                      placeholder={t('products.form.cestPh')}
+                      className={`${inputCls} font-mono`}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-gray-500">
+                      {t('products.form.cost')}
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.custo}
+                      onChange={(e) => setForm((f) => ({ ...f, custo: e.target.value }))}
+                      placeholder={t('products.form.costPh')}
+                      className={inputCls}
+                    />
                   </div>
                 </div>
 

@@ -23,7 +23,7 @@ import { useI18n } from '../i18n';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-  const { t, formatDate } = useI18n();
+  const { t, formatCurrency, formatDate } = useI18n();
   const [product, setProduct] = useState<ProductDetailType | null>(null);
   const [schema, setSchema] = useState<AttributeDef[]>([]);
   const [variantData, setVariantData] = useState<
@@ -37,6 +37,15 @@ export default function ProductDetail() {
   const [draft, setDraft] = useState<Record<string, unknown>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [comercialEditing, setComercialEditing] = useState(false);
+  const [comercialDraft, setComercialDraft] = useState({
+    ean_gtin: '',
+    ncm: '',
+    cest: '',
+    custo: '',
+  });
+  const [comercialSaving, setComercialSaving] = useState(false);
+  const [comercialError, setComercialError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
@@ -125,6 +134,26 @@ export default function ProductDetail() {
       setSaveError(err instanceof Error ? err.message : t('detail.saveFailed'));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveCommercial() {
+    if (!product) return;
+    setComercialSaving(true);
+    setComercialError('');
+    try {
+      const updated = await updateProduct(product.id, {
+        ean_gtin: comercialDraft.ean_gtin.trim() || null,
+        ncm: comercialDraft.ncm.trim() || null,
+        cest: comercialDraft.cest.trim() || null,
+        custo: comercialDraft.custo.trim() || null,
+      });
+      setProduct(updated);
+      setComercialEditing(false);
+    } catch (err) {
+      setComercialError(err instanceof Error ? err.message : t('detail.saveFailed'));
+    } finally {
+      setComercialSaving(false);
     }
   }
 
@@ -265,6 +294,128 @@ export default function ProductDetail() {
                   </dd>
                 </div>
               </dl>
+            </section>
+
+            {/* Dados comerciais (EAN, NCM, CEST, Custo) */}
+            <section className="rounded-xl border border-gray-200 bg-white p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-gray-900">{t('detail.commercial')}</h2>
+                  <p className="mt-0.5 text-xs text-gray-400">{t('detail.commercialHint')}</p>
+                </div>
+                {!comercialEditing ? (
+                  <button
+                    onClick={() => {
+                      setComercialDraft({
+                        ean_gtin: product.ean_gtin ?? '',
+                        ncm: product.ncm ?? '',
+                        cest: product.cest ?? '',
+                        custo: product.custo ?? '',
+                      });
+                      setComercialError('');
+                      setComercialEditing(true);
+                    }}
+                    className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                  >
+                    {t('detail.editValues')}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setComercialEditing(false);
+                        setComercialError('');
+                      }}
+                      disabled={comercialSaving}
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-40"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      onClick={saveCommercial}
+                      disabled={comercialSaving}
+                      className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {comercialSaving ? t('common.saving') : t('detail.save')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+                <div>
+                  <dt className="text-xs text-gray-400">{t('detail.ean')}</dt>
+                  {comercialEditing ? (
+                    <input
+                      value={comercialDraft.ean_gtin}
+                      onChange={(e) =>
+                        setComercialDraft((d) => ({ ...d, ean_gtin: e.target.value }))
+                      }
+                      placeholder={t('detail.eanPh')}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-mono outline-none transition focus:border-blue-500"
+                    />
+                  ) : (
+                    <dd className="mt-0.5 font-mono font-medium text-gray-900">
+                      {product.ean_gtin ?? <span className="text-gray-400">—</span>}
+                    </dd>
+                  )}
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-400">{t('detail.ncm')}</dt>
+                  {comercialEditing ? (
+                    <input
+                      value={comercialDraft.ncm}
+                      onChange={(e) => setComercialDraft((d) => ({ ...d, ncm: e.target.value }))}
+                      placeholder={t('detail.ncmPh')}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-mono outline-none transition focus:border-blue-500"
+                    />
+                  ) : (
+                    <dd className="mt-0.5 font-mono font-medium text-gray-900">
+                      {product.ncm ?? <span className="text-gray-400">—</span>}
+                    </dd>
+                  )}
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-400">{t('detail.cest')}</dt>
+                  {comercialEditing ? (
+                    <input
+                      value={comercialDraft.cest}
+                      onChange={(e) => setComercialDraft((d) => ({ ...d, cest: e.target.value }))}
+                      placeholder={t('detail.cestPh')}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-mono outline-none transition focus:border-blue-500"
+                    />
+                  ) : (
+                    <dd className="mt-0.5 font-mono font-medium text-gray-900">
+                      {product.cest ?? <span className="text-gray-400">—</span>}
+                    </dd>
+                  )}
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-400">{t('detail.cost')}</dt>
+                  {comercialEditing ? (
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={comercialDraft.custo}
+                      onChange={(e) => setComercialDraft((d) => ({ ...d, custo: e.target.value }))}
+                      placeholder={t('detail.costPh')}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm outline-none transition focus:border-blue-500"
+                    />
+                  ) : (
+                    <dd className="mt-0.5 font-medium text-gray-900">
+                      {product.custo
+                        ? formatCurrency(product.custo, 'BRL')
+                        : <span className="text-gray-400">—</span>}
+                    </dd>
+                  )}
+                </div>
+              </div>
+              {comercialError && (
+                <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {comercialError}
+                </p>
+              )}
             </section>
 
             {/* Campos customizados */}

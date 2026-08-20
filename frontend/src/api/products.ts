@@ -41,7 +41,19 @@ export function getProduct(id: string) {
   return api<ProductDetail>(`/products/${id}`);
 }
 
-export function updateProduct(id: string, patch: Partial<{ nome: string; status: ProductStatus }>) {
+export function updateProduct(
+  id: string,
+  patch: Partial<{
+    nome: string;
+    descricao: string;
+    sku_base: string;
+    ean_gtin: string | null;
+    ncm: string | null;
+    cest: string | null;
+    custo: string | null;
+    status: ProductStatus;
+  }>,
+) {
   return api<ProductDetail>(`/products/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
@@ -52,6 +64,10 @@ export function createProduct(input: {
   nome: string;
   descricao?: string;
   sku_base?: string;
+  ean_gtin?: string;
+  ncm?: string;
+  cest?: string;
+  custo?: string;
   category_id?: string;
   supplier_id?: string;
   status?: ProductStatus;

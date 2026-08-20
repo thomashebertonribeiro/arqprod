@@ -28,6 +28,29 @@ export class CreateProductDto {
   @MaxLength(120)
   sku_base?: string;
 
+  @ApiPropertyOptional({ example: '7891234567890' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  ean_gtin?: string;
+
+  @ApiPropertyOptional({ example: '6109.10.00' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(12)
+  ncm?: string;
+
+  @ApiPropertyOptional({ example: '28.010.00' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  cest?: string;
+
+  @ApiPropertyOptional({ example: 12.5, description: 'Custo do produto (R$)' })
+  @IsOptional()
+  @IsString()
+  custo?: string;
+
   @ApiPropertyOptional({ example: 'uuid-da-categoria' })
   @IsOptional()
   @IsString()
@@ -60,6 +83,29 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   descricao?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  ean_gtin?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(12)
+  ncm?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  cest?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  custo?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
