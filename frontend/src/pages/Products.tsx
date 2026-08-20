@@ -343,7 +343,6 @@ export default function Products() {
                   <th className="px-3 py-2.5 font-medium">{t('products.col.cest')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.cost')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.status')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('products.col.vendor')}</th>
                   <th className="w-12 px-4 py-2.5"></th>
                 </tr>
               </thead>
@@ -433,9 +432,6 @@ export default function Products() {
                         >
                           {t(`status.${p.status}` as never)}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-sm text-gray-700">
-                        {p.supplier?.nome ?? <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-4 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="relative inline-block">
