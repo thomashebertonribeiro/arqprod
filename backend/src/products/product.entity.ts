@@ -13,6 +13,9 @@ import {
 import { Organization } from '../organizations/organization.entity';
 import { Category } from '../categories/category.entity';
 import { Supplier } from '../suppliers/supplier.entity';
+import { Brand } from '../brands/brand.entity';
+import { Manufacturer } from '../manufacturers/manufacturer.entity';
+import { User } from '../users/user.entity';
 import { ProductVariant } from './product-variant.entity';
 import { ProductAttributeValue } from './product-attribute-value.entity';
 import { ProductImage } from './product-image.entity';
@@ -46,6 +49,34 @@ export class Product {
   @JoinColumn({ name: 'supplier_id' })
   supplier: Supplier | null;
 
+  @Column({ name: 'brand_id', type: 'uuid', nullable: true })
+  brandId: string | null;
+
+  @ManyToOne(() => Brand, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'brand_id' })
+  brand: Brand | null;
+
+  @Column({ name: 'manufacturer_id', type: 'uuid', nullable: true })
+  manufacturerId: string | null;
+
+  @ManyToOne(() => Manufacturer, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'manufacturer_id' })
+  manufacturer: Manufacturer | null;
+
+  @Column({ name: 'criado_por', type: 'uuid', nullable: true })
+  criadoPor: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'criado_por' })
+  criadoPorUser: User | null;
+
+  @Column({ name: 'atualizado_por', type: 'uuid', nullable: true })
+  atualizadoPor: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'atualizado_por' })
+  atualizadoPorUser: User | null;
+
   @Column()
   nome: string;
 
@@ -66,6 +97,27 @@ export class Product {
 
   @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true })
   custo: string | null;
+
+  @Column({ name: 'peso_bruto_kg', type: 'numeric', precision: 12, scale: 4, nullable: true })
+  pesoBrutoKg: string | null;
+
+  @Column({ name: 'peso_liquido_kg', type: 'numeric', precision: 12, scale: 4, nullable: true })
+  pesoLiquidoKg: string | null;
+
+  @Column({ name: 'altura_cm', type: 'numeric', precision: 10, scale: 2, nullable: true })
+  alturaCm: string | null;
+
+  @Column({ name: 'largura_cm', type: 'numeric', precision: 10, scale: 2, nullable: true })
+  larguraCm: string | null;
+
+  @Column({ name: 'profundidade_cm', type: 'numeric', precision: 10, scale: 2, nullable: true })
+  profundidadeCm: string | null;
+
+  @Column({ name: 'unidade_venda', type: 'varchar', length: 20, nullable: true })
+  unidadeVenda: string | null;
+
+  @Column({ name: 'data_lancamento', type: 'timestamptz', nullable: true })
+  dataLancamento: Date | null;
 
   @Column({ default: 'rascunho' })
   status: ProductStatus;

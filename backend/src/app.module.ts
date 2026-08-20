@@ -13,6 +13,9 @@ import { AttributeGroupsModule } from './attribute-groups/attribute-groups.modul
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { CommerceModule } from './commerce/commerce.module';
+import { BrandsModule } from './brands/brands.module';
+import { ManufacturersModule } from './manufacturers/manufacturers.module';
+import { TagsModule } from './tags/tags.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { MetaController } from './meta/meta.controller';
@@ -43,6 +46,9 @@ import { UploadsController } from './uploads/uploads.controller';
     CategoriesModule,
     ProductsModule,
     CommerceModule,
+    BrandsModule,
+    ManufacturersModule,
+    TagsModule,
     WebhooksModule,
     IntegrationsModule,
   ],

@@ -9,6 +9,9 @@ import { Attribute } from '../attributes/attribute.entity';
 import { StockItem } from '../stock/stock-item.entity';
 import { Price } from '../prices/price.entity';
 import { Tag } from '../tags/tag.entity';
+import { Brand } from '../brands/brand.entity';
+import { Manufacturer } from '../manufacturers/manufacturer.entity';
+import { ProductAudit } from './product-audit.entity';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { WebhooksModule } from '../webhooks/webhooks.module';
@@ -25,6 +28,9 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
       StockItem,
       Price,
       Tag,
+      Brand,
+      Manufacturer,
+      ProductAudit,
     ]),
     WebhooksModule,
   ],

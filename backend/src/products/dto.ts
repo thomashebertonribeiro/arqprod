@@ -61,6 +61,52 @@ export class CreateProductDto {
   @IsString()
   supplier_id?: string;
 
+  @ApiPropertyOptional({ example: 'uuid-da-marca' })
+  @IsOptional()
+  @IsString()
+  brand_id?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-do-fabricante' })
+  @IsOptional()
+  @IsString()
+  manufacturer_id?: string;
+
+  @ApiPropertyOptional({ example: '0.25' })
+  @IsOptional()
+  @IsString()
+  peso_bruto_kg?: string;
+
+  @ApiPropertyOptional({ example: '0.22' })
+  @IsOptional()
+  @IsString()
+  peso_liquido_kg?: string;
+
+  @ApiPropertyOptional({ example: '15' })
+  @IsOptional()
+  @IsString()
+  altura_cm?: string;
+
+  @ApiPropertyOptional({ example: '10' })
+  @IsOptional()
+  @IsString()
+  largura_cm?: string;
+
+  @ApiPropertyOptional({ example: '2' })
+  @IsOptional()
+  @IsString()
+  profundidade_cm?: string;
+
+  @ApiPropertyOptional({ example: 'UN' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unidade_venda?: string;
+
+  @ApiPropertyOptional({ example: '2026-09-01' })
+  @IsOptional()
+  @IsString()
+  data_lancamento?: string;
+
   @ApiPropertyOptional({ enum: PRODUCT_STATUSES, default: 'rascunho' })
   @IsOptional()
   @IsIn(PRODUCT_STATUSES)
@@ -116,6 +162,52 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   supplier_id?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  brand_id?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  manufacturer_id?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  peso_bruto_kg?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  peso_liquido_kg?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  altura_cm?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  largura_cm?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  profundidade_cm?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  unidade_venda?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  data_lancamento?: string | null;
 
   @ApiPropertyOptional({ enum: PRODUCT_STATUSES })
   @IsOptional()
@@ -201,6 +293,13 @@ export class SaveAttributeValuesDto {
   @ApiProperty({ type: AttributeValueItemDto, isArray: true })
   @IsArray()
   valores: AttributeValueItemDto[];
+}
+
+export class SetTagsDto {
+  @ApiProperty({ example: ['promo', 'verão'], type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  tags: string[];
 }
 
 export class CreateImageDto {

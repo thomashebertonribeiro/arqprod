@@ -11,10 +11,12 @@ export default function VariantsTable({
   variants,
   variantAttrs,
   data,
+  onPriceStock,
 }: {
   variants: ProductVariantDetail[];
   variantAttrs: AttributeDef[];
   data: Record<string, { stock: VariantStockRow[]; prices: VariantPriceRow[] }>;
+  onPriceStock?: (variantId: string) => void;
 }) {
   const { t, formatCurrency } = useI18n();
 
@@ -40,7 +42,8 @@ export default function VariantsTable({
               <th className="px-3 py-2.5 font-medium">{t('variants.weight')}</th>
               <th className="px-3 py-2.5 font-medium">{t('variants.stock')}</th>
               <th className="px-3 py-2.5 font-medium">{t('variants.price')}</th>
-              <th className="px-5 py-2.5 font-medium">{t('variants.status')}</th>
+              <th className="px-3 py-2.5 font-medium">{t('variants.status')}</th>
+              {onPriceStock && <th className="px-5 py-2.5 font-medium" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -108,6 +111,16 @@ export default function VariantsTable({
                   <td className="px-5 py-3">
                     <StatusBadge status={v.status === 'ativo' ? 'ativo' : 'inativo'} />
                   </td>
+                  {onPriceStock && (
+                    <td className="px-5 py-3 text-right">
+                      <button
+                        onClick={() => onPriceStock(v.id)}
+                        className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50"
+                      >
+                        {t('variants.priceStock')}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}

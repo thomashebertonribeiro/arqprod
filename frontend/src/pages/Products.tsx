@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   createProduct,
   deleteProduct,
+  exportProducts,
+  importProducts,
   listCategories,
   listSuppliers,
   listProducts,
@@ -106,6 +108,50 @@ export default function Products() {
   const [formError, setFormError] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [csvBusy, setCsvBusy] = useState(false);
+  const [csvMsg, setCsvMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function onExport() {
+    setCsvBusy(true);
+    setCsvMsg('');
+    try {
+      const blob = await exportProducts();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'produtos.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setCsvMsg(err instanceof Error ? err.message : t('products.csvFailed'));
+    } finally {
+      setCsvBusy(false);
+    }
+  }
+
+  async function onImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setCsvBusy(true);
+    setCsvMsg('');
+    try {
+      const res = await importProducts(file);
+      setCsvMsg(
+        t('products.csvDone', {
+          created: res.created,
+          updated: res.updated,
+          skipped: res.skipped,
+        }),
+      );
+      load();
+    } catch (err) {
+      setCsvMsg(err instanceof Error ? err.message : t('products.csvFailed'));
+    } finally {
+      setCsvBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -252,6 +298,29 @@ export default function Products() {
           </h1>
           <div className="flex items-center gap-2">
             <button
+              onClick={onExport}
+              disabled={csvBusy}
+              className="flex h-9 items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              title={t('products.exportCsv')}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              {csvBusy ? '…' : t('products.exportCsv')}
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={csvBusy}
+              className="flex h-9 items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              title={t('products.importCsv')}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3-3-3m0 0-3 3m3-3V15" />
+              </svg>
+              {csvBusy ? '…' : t('products.importCsv')}
+            </button>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={onImport} />
+            <button
               onClick={openModal}
               className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-3.5 text-sm font-medium text-white transition hover:bg-blue-700"
             >
@@ -307,6 +376,12 @@ export default function Products() {
             </div>
           </div>
         </div>
+
+        {csvMsg && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+            {csvMsg}
+          </div>
+        )}
 
         {selected.size > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-800">

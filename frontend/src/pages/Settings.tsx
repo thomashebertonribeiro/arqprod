@@ -9,10 +9,11 @@ import {
   unlinkAttributeFromCategory,
   updateAttribute,
 } from '../api/attributes';
-import { listCategories } from '../api/products';
-import type { AttributeDef, AttributeDataType, Paginated } from '../api/types';
+import { listCategories, listBrands, createBrand, listManufacturers, createManufacturer } from '../api/products';
+import type { AttributeDef, AttributeDataType, NamedRef, Paginated } from '../api/types';
 import CategoriesSection from '../components/CategoriesSection';
 import Nav from '../components/Nav';
+import RefListSection from '../components/RefListSection';
 import { useI18n } from '../i18n';
 
 function PlusIcon() {
@@ -45,11 +46,15 @@ const inputCls =
 
 export default function Settings() {
   const { t } = useI18n();
-  const [tab, setTab] = useState<'campos' | 'categorias'>('campos');
+  const [tab, setTab] = useState<'campos' | 'categorias' | 'marcas'>('campos');
   const [data, setData] = useState<Paginated<AttributeDef> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [nivelFilter, setNivelFilter] = useState('');
+
+  const [brands, setBrands] = useState<NamedRef[]>([]);
+  const [manufacturers, setManufacturers] = useState<NamedRef[]>([]);
+  const [refBusy, setRefBusy] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -136,6 +141,39 @@ export default function Settings() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const loadRefs = useCallback(async () => {
+    const [b, m] = await Promise.all([
+      listBrands().catch(() => ({ data: [] as NamedRef[] })),
+      listManufacturers().catch(() => ({ data: [] as NamedRef[] })),
+    ]);
+    setBrands(b.data);
+    setManufacturers(m.data);
+  }, []);
+
+  useEffect(() => {
+    loadRefs();
+  }, [loadRefs]);
+
+  const createBrandLocal = async (nome: string) => {
+    setRefBusy(true);
+    try {
+      await createBrand(nome);
+      await loadRefs();
+    } finally {
+      setRefBusy(false);
+    }
+  };
+
+  const createManufacturerLocal = async (nome: string) => {
+    setRefBusy(true);
+    try {
+      await createManufacturer(nome);
+      await loadRefs();
+    } finally {
+      setRefBusy(false);
+    }
+  };
 
   const needsOptions = form.tipo_dado === 'lista' || form.tipo_dado === 'lista_multipla';
 
@@ -271,10 +309,39 @@ export default function Settings() {
             >
               {t('settings.tab.categories')}
             </button>
+            <button
+              onClick={() => setTab('marcas')}
+              className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition ${
+                tab === 'marcas' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              {t('settings.tab.brands')}
+            </button>
           </div>
         </div>
 
         {tab === 'categorias' && <CategoriesSection />}
+
+        {tab === 'marcas' && (
+          <div className="space-y-6">
+            <RefListSection
+              title={t('settings.brands.title')}
+              subtitle={t('settings.brands.subtitle')}
+              empty={t('settings.brands.empty')}
+              items={brands}
+              onCreate={createBrandLocal}
+              creating={refBusy}
+            />
+            <RefListSection
+              title={t('settings.manufacturers.title')}
+              subtitle={t('settings.manufacturers.subtitle')}
+              empty={t('settings.manufacturers.empty')}
+              items={manufacturers}
+              onCreate={createManufacturerLocal}
+              creating={refBusy}
+            />
+          </div>
+        )}
 
         {tab === 'campos' && (
         <>

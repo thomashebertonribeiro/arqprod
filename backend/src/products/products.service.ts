@@ -18,6 +18,11 @@ import { ProductImage } from './product-image.entity';
 import { Attribute } from '../attributes/attribute.entity';
 import { StockItem } from '../stock/stock-item.entity';
 import { Price } from '../prices/price.entity';
+import { Brand } from '../brands/brand.entity';
+import { Manufacturer } from '../manufacturers/manufacturer.entity';
+import { ProductAudit } from './product-audit.entity';
+import { User } from '../users/user.entity';
+import { Tag } from '../tags/tag.entity';
 import { validateAttributeValue } from '../attributes/attribute-value.validator';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import {
@@ -47,11 +52,15 @@ export class ProductsService {
     private readonly stock: Repository<StockItem>,
     @InjectRepository(Price)
     private readonly prices: Repository<Price>,
+    @InjectRepository(ProductAudit)
+    private readonly audits: Repository<ProductAudit>,
+    @InjectRepository(Tag)
+    private readonly tags: Repository<Tag>,
     private readonly webhooks: WebhooksService,
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(orgId: string, dto: CreateProductDto) {
+  async create(orgId: string, dto: CreateProductDto, userId?: string) {
     const product = this.products.create({
       organizationId: orgId,
       nome: dto.nome,
@@ -63,10 +72,22 @@ export class ProductsService {
       custo: dto.custo ?? null,
       categoryId: dto.category_id ?? null,
       supplierId: dto.supplier_id ?? null,
+      brandId: dto.brand_id ?? null,
+      manufacturerId: dto.manufacturer_id ?? null,
+      pesoBrutoKg: dto.peso_bruto_kg ?? null,
+      pesoLiquidoKg: dto.peso_liquido_kg ?? null,
+      alturaCm: dto.altura_cm ?? null,
+      larguraCm: dto.largura_cm ?? null,
+      profundidadeCm: dto.profundidade_cm ?? null,
+      unidadeVenda: dto.unidade_venda ?? null,
+      dataLancamento: dto.data_lancamento ? new Date(dto.data_lancamento) : null,
       status: (dto.status as Product['status']) ?? 'rascunho',
       origemIntegracao: dto.origem_integracao ?? null,
+      criadoPor: userId ?? null,
+      atualizadoPor: userId ?? null,
     });
     const saved = await this.products.save(product);
+    await this.recordAudit(orgId, saved.id, userId, 'created', { nome: saved.nome });
     this.webhooks.dispatch(orgId, 'product.created', { product_id: saved.id }).catch(() => undefined);
     return this.findOne(orgId, saved.id);
   }
@@ -77,6 +98,10 @@ export class ProductsService {
       relations: {
         category: true,
         supplier: true,
+        brand: true,
+        manufacturer: true,
+        criadoPorUser: true,
+        atualizadoPorUser: true,
         variants: true,
         images: true,
         tags: true,
@@ -127,6 +152,22 @@ export class ProductsService {
       ncm: base.ncm,
       cest: base.cest,
       custo: base.custo,
+      brand: base.brand,
+      brand_id: base.brandId,
+      manufacturer: base.manufacturer,
+      manufacturer_id: base.manufacturerId,
+      unidade_venda: base.unidadeVenda,
+      data_lancamento: base.dataLancamento,
+      peso_bruto_kg: base.pesoBrutoKg,
+      peso_liquido_kg: base.pesoLiquidoKg,
+      altura_cm: base.alturaCm,
+      largura_cm: base.larguraCm,
+      profundidade_cm: base.profundidadeCm,
+      cubagem_m3: computeCubagem(base.alturaCm, base.larguraCm, base.profundidadeCm),
+      criado_por: base.criadoPor,
+      atualizado_por: base.atualizadoPor,
+      criado_por_nome: base.criadoPorUser?.nome ?? null,
+      atualizado_por_nome: base.atualizadoPorUser?.nome ?? null,
       atributos: base.atributos,
       origem_integracao: base.origemIntegracao,
       images: base.images.map((i) => ({
@@ -158,7 +199,7 @@ export class ProductsService {
     };
   }
 
-  async update(orgId: string, id: string, dto: UpdateProductDto) {
+  async update(orgId: string, id: string, dto: UpdateProductDto, userId?: string) {
     const product = await this.getOwned(orgId, id);
     if (dto.nome !== undefined) product.nome = dto.nome;
     if (dto.descricao !== undefined) product.descricao = dto.descricao ?? null;
@@ -168,20 +209,328 @@ export class ProductsService {
     if (dto.custo !== undefined) product.custo = dto.custo ?? null;
     if (dto.category_id !== undefined) product.categoryId = dto.category_id || null;
     if (dto.supplier_id !== undefined) product.supplierId = dto.supplier_id || null;
+    if (dto.brand_id !== undefined) product.brandId = dto.brand_id || null;
+    if (dto.manufacturer_id !== undefined) product.manufacturerId = dto.manufacturer_id || null;
+    if (dto.peso_bruto_kg !== undefined) product.pesoBrutoKg = dto.peso_bruto_kg ?? null;
+    if (dto.peso_liquido_kg !== undefined) product.pesoLiquidoKg = dto.peso_liquido_kg ?? null;
+    if (dto.altura_cm !== undefined) product.alturaCm = dto.altura_cm ?? null;
+    if (dto.largura_cm !== undefined) product.larguraCm = dto.largura_cm ?? null;
+    if (dto.profundidade_cm !== undefined) product.profundidadeCm = dto.profundidade_cm ?? null;
+    if (dto.unidade_venda !== undefined) product.unidadeVenda = dto.unidade_venda ?? null;
+    if (dto.data_lancamento !== undefined)
+      product.dataLancamento = dto.data_lancamento ? new Date(dto.data_lancamento) : null;
     if (dto.status !== undefined) product.status = dto.status as Product['status'];
+    if (userId) product.atualizadoPor = userId;
     await this.products.save(product);
+    await this.recordAudit(orgId, id, userId, 'updated', { nome: product.nome });
     this.webhooks.dispatch(orgId, 'product.updated', { product_id: id }).catch(() => undefined);
     return this.findOne(orgId, id);
   }
 
-  async remove(orgId: string, id: string) {
+  async remove(orgId: string, id: string, userId?: string) {
     const product = await this.getOwned(orgId, id);
+    await this.recordAudit(orgId, id, userId, 'deleted', { nome: product.nome });
     await this.products.delete(product.id);
     this.webhooks.dispatch(orgId, 'product.deleted', { product_id: id }).catch(() => undefined);
     return { id: product.id };
   }
 
-  async addVariant(orgId: string, productId: string, dto: CreateVariantDto) {
+  private async recordAudit(
+    orgId: string,
+    productId: string,
+    userId: string | undefined,
+    acao: ProductAudit['acao'],
+    detalhes?: Record<string, unknown>,
+  ) {
+    try {
+      await this.audits.save(
+        this.audits.create({
+          productId,
+          userId: userId ?? null,
+          acao,
+          detalhes: detalhes ?? null,
+        }),
+      );
+    } catch {
+      // auditoria é best-effort — nunca deve derrubar a operação principal
+    }
+  }
+
+  async duplicate(orgId: string, id: string, userId?: string) {
+    const source = await this.findOne(orgId, id);
+    const copy = this.products.create({
+      organizationId: orgId,
+      nome: `${source.nome} (cópia)`,
+      descricao: source.descricao,
+      skuBase: source.skuBase ? `${source.skuBase}-COPY` : null,
+      eanGtin: null,
+      ncm: source.ncm,
+      cest: source.cest,
+      custo: source.custo,
+      categoryId: source.categoryId,
+      supplierId: source.supplierId,
+      brandId: source.brandId,
+      manufacturerId: source.manufacturerId,
+      pesoBrutoKg: source.pesoBrutoKg,
+      pesoLiquidoKg: source.pesoLiquidoKg,
+      alturaCm: source.alturaCm,
+      larguraCm: source.larguraCm,
+      profundidadeCm: source.profundidadeCm,
+      unidadeVenda: source.unidadeVenda,
+      dataLancamento: source.dataLancamento,
+      status: 'rascunho',
+      origemIntegracao: null,
+      criadoPor: userId ?? null,
+      atualizadoPor: userId ?? null,
+      tags: source.tags ?? [],
+    });
+    const saved = await this.products.save(copy);
+
+    for (const v of source.variants ?? []) {
+      await this.variants.save(
+        this.variants.create({
+          productId: saved.id,
+          sku: `${v.sku}-COPY`,
+          eanGtin: null,
+          combinacao: v.combinacao,
+          pesoKg: v.pesoKg,
+          dimensoes: v.dimensoes,
+          status: 'inativo',
+        }),
+      );
+    }
+    for (const img of source.images ?? []) {
+      await this.images.save(
+        this.images.create({
+          productId: saved.id,
+          url: img.url,
+          ordem: img.ordem,
+          altText: img.altText,
+        }),
+      );
+    }
+    await this.recordAudit(orgId, saved.id, userId, 'duplicated', { from: id });
+    await this.recordAudit(orgId, id, userId, 'duplicated', { to: saved.id });
+    this.webhooks.dispatch(orgId, 'product.created', { product_id: saved.id }).catch(() => undefined);
+    return this.findOneEnriched(orgId, saved.id);
+  }
+
+  async addTags(orgId: string, productId: string, nomes: string[], userId?: string) {
+    const product = await this.getOwned(orgId, productId);
+    const existing = await this.tags.find({ where: { organizationId: orgId } });
+    const byName = new Map(existing.map((t) => [t.nome.toLowerCase(), t]));
+    const current = new Set((product.tags ?? []).map((t) => t.nome.toLowerCase()));
+
+    const toLink: Tag[] = [];
+    for (const nome of nomes) {
+      const key = nome.trim().toLowerCase();
+      if (!key || current.has(key)) continue;
+      const found = byName.get(key);
+      if (found) {
+        toLink.push(found);
+        current.add(key);
+      } else {
+        const tag = await this.tags.save(this.tags.create({ organizationId: orgId, nome: nome.trim() }));
+        toLink.push(tag);
+        byName.set(key, tag);
+        current.add(key);
+      }
+    }
+    if (toLink.length) {
+      product.tags = [...(product.tags ?? []), ...toLink];
+      await this.products.save(product);
+      await this.recordAudit(
+        orgId,
+        productId,
+        userId,
+        'tag_added',
+        { tags: toLink.map((t) => t.nome) },
+      );
+    }
+    return this.findOneEnriched(orgId, productId);
+  }
+
+  async removeTag(orgId: string, productId: string, tagId: string, userId?: string) {
+    const product = await this.getOwned(orgId, productId);
+    const tag = (product.tags ?? []).find((t) => t.id === tagId);
+    if (!tag) throw new NotFoundException('Tag não vinculada a este produto');
+    product.tags = (product.tags ?? []).filter((t) => t.id !== tagId);
+    await this.products.save(product);
+    await this.recordAudit(orgId, productId, userId, 'tag_removed', { tag: tag.nome });
+    return this.findOneEnriched(orgId, productId);
+  }
+
+  async listAudits(orgId: string, productId: string) {
+    await this.getOwned(orgId, productId);
+    const rows = await this.audits.find({
+      where: { productId },
+      relations: { user: true },
+      order: { criadoEm: 'DESC' },
+      take: 100,
+    });
+    return {
+      data: rows.map((r) => ({
+        id: r.id,
+        acao: r.acao,
+        detalhes: r.detalhes,
+        criado_em: r.criadoEm,
+        usuario: r.user ? { id: r.user.id, nome: r.user.nome } : null,
+      })),
+    };
+  }
+
+  async importCsv(orgId: string, file?: Express.Multer.File, userId?: string) {
+    if (!file?.buffer) throw new BadRequestException('Envie um arquivo CSV no campo "file"');
+    const text = file.buffer.toString('utf8');
+    const lines = text.split(/\r?\n/).filter((l) => l.trim() !== '');
+    if (lines.length < 2) throw new BadRequestException('CSV vazio (precisa de cabeçalho + dados)');
+    const headers = parseCsvLine(lines[0]);
+    const idx = (name: string) => headers.findIndex((h) => h.trim().toLowerCase() === name.toLowerCase());
+
+    const col = {
+      nome: idx('nome'),
+      sku: idx('sku') >= 0 ? idx('sku') : idx('sku_base'),
+      ean: idx('ean') >= 0 ? idx('ean') : idx('ean_gtin'),
+      ncm: idx('ncm'),
+      cest: idx('cest'),
+      custo: idx('custo'),
+      descricao: idx('descricao'),
+      status: idx('status'),
+      categoria: idx('categoria'),
+      marca: idx('marca'),
+      fabricante: idx('fabricante'),
+      unidade: idx('unidade_venda'),
+      data_lancamento: idx('data_lancamento'),
+      peso_bruto: idx('peso_bruto_kg'),
+      peso_liquido: idx('peso_liquido_kg'),
+      altura: idx('altura_cm'),
+      largura: idx('largura_cm'),
+      profundidade: idx('profundidade_cm'),
+    };
+    if (col.nome < 0) throw new BadRequestException('Coluna obrigatória ausente: "nome"');
+
+    const categories = await this.dataSource.query(
+      `SELECT id, nome FROM categories WHERE organization_id = $1`,
+      [orgId],
+    );
+    const catByName = new Map<string, string>((categories as { id: string; nome: string }[]).map((c) => [c.nome.trim().toLowerCase(), c.id]));
+    const brands = await this.dataSource.query(
+      `SELECT id, nome FROM brands WHERE organization_id = $1`,
+      [orgId],
+    );
+    const brandByName = new Map<string, string>((brands as { id: string; nome: string }[]).map((b) => [b.nome.trim().toLowerCase(), b.id]));
+    const manufacturers = await this.dataSource.query(
+      `SELECT id, nome FROM manufacturers WHERE organization_id = $1`,
+      [orgId],
+    );
+    const mfrByName = new Map<string, string>((manufacturers as { id: string; nome: string }[]).map((m) => [m.nome.trim().toLowerCase(), m.id]));
+
+    const created: string[] = [];
+    const updated: string[] = [];
+    const skipped: string[] = [];
+
+    for (const line of lines.slice(1)) {
+      const fields = parseCsvLine(line);
+      const get = (i: number) => (i >= 0 ? (fields[i] ?? '').trim() : '');
+      const nome = get(col.nome);
+      if (!nome) {
+        skipped.push('(linha sem nome)');
+        continue;
+      }
+      const sku = get(col.sku);
+      const dataLancamento = get(col.data_lancamento) ? new Date(get(col.data_lancamento)) : null;
+
+      let existing: Product | null = null;
+      if (sku) {
+        existing = await this.products.findOne({ where: { organizationId: orgId, skuBase: sku } });
+      }
+
+      const payload = {
+        nome,
+        descricao: get(col.descricao) || null,
+        skuBase: sku || null,
+        eanGtin: get(col.ean) || null,
+        ncm: get(col.ncm) || null,
+        cest: get(col.cest) || null,
+        custo: get(col.custo) || null,
+        categoria: get(col.categoria),
+        marca: get(col.marca),
+        fabricante: get(col.fabricante),
+        unidadeVenda: get(col.unidade) || null,
+        dataLancamento,
+        pesoBrutoKg: get(col.peso_bruto) || null,
+        pesoLiquidoKg: get(col.peso_liquido) || null,
+        alturaCm: get(col.altura) || null,
+        larguraCm: get(col.largura) || null,
+        profundidadeCm: get(col.profundidade) || null,
+        status: (get(col.status) || 'rascunho') as Product['status'],
+      };
+
+      const categoryId = payload.categoria ? catByName.get(payload.categoria.toLowerCase()) ?? null : null;
+      const brandId = payload.marca ? brandByName.get(payload.marca.toLowerCase()) ?? null : null;
+      const manufacturerId = payload.fabricante ? mfrByName.get(payload.fabricante.toLowerCase()) ?? null : null;
+
+      if (existing) {
+        existing.nome = payload.nome;
+        existing.descricao = payload.descricao;
+        existing.skuBase = payload.skuBase;
+        existing.eanGtin = payload.eanGtin;
+        existing.ncm = payload.ncm;
+        existing.cest = payload.cest;
+        existing.custo = payload.custo;
+        existing.categoryId = categoryId;
+        existing.brandId = brandId;
+        existing.manufacturerId = manufacturerId;
+        existing.unidadeVenda = payload.unidadeVenda;
+        existing.dataLancamento = payload.dataLancamento;
+        existing.pesoBrutoKg = payload.pesoBrutoKg;
+        existing.pesoLiquidoKg = payload.pesoLiquidoKg;
+        existing.alturaCm = payload.alturaCm;
+        existing.larguraCm = payload.larguraCm;
+        existing.profundidadeCm = payload.profundidadeCm;
+        existing.status = payload.status;
+        if (userId) existing.atualizadoPor = userId;
+        await this.products.save(existing);
+        await this.recordAudit(orgId, existing.id, userId, 'updated', { origem: 'csv_import' });
+        updated.push(nome);
+      } else {
+        const createdProduct = this.products.create({
+          organizationId: orgId,
+          nome: payload.nome,
+          descricao: payload.descricao,
+          skuBase: payload.skuBase,
+          eanGtin: payload.eanGtin,
+          ncm: payload.ncm,
+          cest: payload.cest,
+          custo: payload.custo,
+          categoryId,
+          brandId,
+          manufacturerId,
+          unidadeVenda: payload.unidadeVenda,
+          dataLancamento: payload.dataLancamento,
+          pesoBrutoKg: payload.pesoBrutoKg,
+          pesoLiquidoKg: payload.pesoLiquidoKg,
+          alturaCm: payload.alturaCm,
+          larguraCm: payload.larguraCm,
+          profundidadeCm: payload.profundidadeCm,
+          status: payload.status,
+          criadoPor: userId ?? null,
+          atualizadoPor: userId ?? null,
+        });
+        const saved = await this.products.save(createdProduct);
+        await this.recordAudit(orgId, saved.id, userId, 'created', { origem: 'csv_import' });
+        created.push(nome);
+      }
+    }
+
+    return {
+      created: created.length,
+      updated: updated.length,
+      skipped: skipped.length,
+    };
+  }
+
+  async addVariant(orgId: string, productId: string, dto: CreateVariantDto, userId?: string) {
     const product = await this.getOwned(orgId, productId);
     const exists = await this.variants.findOne({ where: { sku: dto.sku } });
     if (exists) throw new BadRequestException(`SKU "${dto.sku}" já em uso`);
@@ -196,11 +545,12 @@ export class ProductsService {
     });
     const saved = await this.variants.save(variant);
     await this.rebuildAttributesCache(product);
+    await this.recordAudit(orgId, productId, userId, 'variant_created', { variant_id: saved.id, sku: saved.sku });
     this.webhooks.dispatch(orgId, 'variant.created', { variant_id: saved.id, product_id: product.id }).catch(() => undefined);
     return saved;
   }
 
-  async updateVariant(orgId: string, productId: string, variantId: string, dto: UpdateVariantDto) {
+  async updateVariant(orgId: string, productId: string, variantId: string, dto: UpdateVariantDto, userId?: string) {
     const product = await this.getOwned(orgId, productId);
     const variant = await this.variants.findOne({
       where: { id: variantId, productId: product.id },
@@ -220,6 +570,7 @@ export class ProductsService {
 
     await this.variants.save(variant);
     await this.rebuildAttributesCache(product);
+    await this.recordAudit(orgId, productId, userId, 'variant_updated', { variant_id: variant.id, sku: variant.sku });
     return variant;
   }
 
@@ -272,6 +623,13 @@ export class ProductsService {
     }
 
     await this.rebuildAttributesCache(product);
+    await this.recordAudit(
+      orgId,
+      product.id,
+      userId,
+      'attribute_values_saved',
+      { atributos: dto.valores.map((v) => v.atributo) },
+    );
     this.webhooks.dispatch(orgId, 'product.updated', { product_id: product.id }).catch(() => undefined);
     return this.getProductAttributeValues(orgId, product.id);
   }
@@ -368,9 +726,9 @@ export class ProductsService {
     };
   }
 
-  async addImage(orgId: string, productId: string, dto: { url: string; ordem?: number; alt_text?: string }) {
+  async addImage(orgId: string, productId: string, dto: { url: string; ordem?: number; alt_text?: string }, userId?: string) {
     const product = await this.getOwned(orgId, productId);
-    return this.images.save(
+    const row = await this.images.save(
       this.images.create({
         productId: product.id,
         url: dto.url,
@@ -378,9 +736,11 @@ export class ProductsService {
         altText: dto.alt_text ?? null,
       }),
     );
+    await this.recordAudit(orgId, productId, userId, 'image_added', { url: dto.url });
+    return row;
   }
 
-  async uploadImage(orgId: string, productId: string, file?: Express.Multer.File) {
+  async uploadImage(orgId: string, productId: string, file?: Express.Multer.File, userId?: string) {
     const product = await this.getOwned(orgId, productId);
     if (!file?.buffer) throw new BadRequestException('Envie um arquivo no campo "file"');
     if (!['image/jpeg', 'image/png'].includes(file.mimetype)) {
@@ -411,6 +771,7 @@ export class ProductsService {
         ordem: 0,
       }),
     );
+    await this.recordAudit(orgId, productId, userId, 'image_added', { url: row.url });
     this.webhooks.dispatch(orgId, 'product.updated', { product_id: product.id }).catch(() => undefined);
     return row;
   }
@@ -582,6 +943,20 @@ export class ProductsService {
         category_id: p.categoryId,
         supplier: p.supplier,
         supplier_id: p.supplierId,
+        brand: p.brand,
+        brand_id: p.brandId,
+        manufacturer: p.manufacturer,
+        manufacturer_id: p.manufacturerId,
+        unidade_venda: p.unidadeVenda,
+        data_lancamento: p.dataLancamento,
+        peso_bruto_kg: p.pesoBrutoKg,
+        peso_liquido_kg: p.pesoLiquidoKg,
+        altura_cm: p.alturaCm,
+        largura_cm: p.larguraCm,
+        profundidade_cm: p.profundidadeCm,
+        cubagem_m3: computeCubagem(p.alturaCm, p.larguraCm, p.profundidadeCm),
+        criado_por: p.criadoPor,
+        atualizado_por: p.atualizadoPor,
         origem_integracao: p.origemIntegracao,
         criado_em: p.criadoEm,
         atualizado_em: p.atualizadoEm,
@@ -599,4 +974,47 @@ export class ProductsService {
       };
     });
   }
+}
+
+function computeCubagem(
+  altura: string | null,
+  largura: string | null,
+  profundidade: string | null,
+): string | null {
+  if (!altura || !largura || !profundidade) return null;
+  const h = Number(altura);
+  const l = Number(largura);
+  const p = Number(profundidade);
+  if ([h, l, p].some((n) => Number.isNaN(n) || n <= 0)) return null;
+  return ((h * l * p) / 1_000_000).toFixed(6);
+}
+
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      fields.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  fields.push(current);
+  return fields.map((f) => f.trim());
 }

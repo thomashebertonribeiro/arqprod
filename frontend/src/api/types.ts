@@ -15,6 +15,10 @@ export interface ProductListItem {
   category_id: string | null;
   supplier: { id: string; nome: string } | null;
   supplier_id: string | null;
+  brand: { id: string; nome: string } | null;
+  brand_id: string | null;
+  manufacturer: { id: string; nome: string } | null;
+  manufacturer_id: string | null;
   origem_integracao: string | null;
   criado_em: string;
   atualizado_em: string;
@@ -101,6 +105,19 @@ export interface ProductVariantDetail {
   values: Record<string, unknown>;
 }
 
+export interface NamedRef {
+  id: string;
+  nome: string;
+}
+
+export interface ProductAuditRow {
+  id: string;
+  acao: string;
+  detalhes: Record<string, unknown> | null;
+  criado_em: string;
+  usuario: { id: string; nome: string } | null;
+}
+
 export interface ProductDetail {
   id: string;
   nome: string;
@@ -111,10 +128,26 @@ export interface ProductDetail {
   cest: string | null;
   custo: string | null;
   status: ProductStatus;
-  category: { id: string; nome: string } | null;
+  category: NamedRef | null;
   category_id: string | null;
-  supplier: { id: string; nome: string } | null;
+  supplier: NamedRef | null;
   supplier_id: string | null;
+  brand: NamedRef | null;
+  brand_id: string | null;
+  manufacturer: NamedRef | null;
+  manufacturer_id: string | null;
+  unidade_venda: string | null;
+  data_lancamento: string | null;
+  peso_bruto_kg: string | null;
+  peso_liquido_kg: string | null;
+  altura_cm: string | null;
+  largura_cm: string | null;
+  profundidade_cm: string | null;
+  cubagem_m3: string | null;
+  criado_por: string | null;
+  atualizado_por: string | null;
+  criado_por_nome: string | null;
+  atualizado_por_nome: string | null;
   origem_integracao: string | null;
   criado_em: string;
   atualizado_em: string;

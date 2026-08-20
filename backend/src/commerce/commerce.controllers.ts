@@ -17,6 +17,8 @@ import { Price } from '../prices/price.entity';
 import { Warehouse } from '../warehouses/warehouse.entity';
 import { StockItem } from '../stock/stock-item.entity';
 import { Supplier } from '../suppliers/supplier.entity';
+import { ProductVariant } from '../products/product-variant.entity';
+import { ProductAudit } from '../products/product-audit.entity';
 
 // ---------------------------------------------------------------- DTOs
 
@@ -138,7 +140,33 @@ export class PricesController {
     private readonly prices: Repository<Price>,
     @InjectRepository(Channel)
     private readonly channels: Repository<Channel>,
+    @InjectRepository(ProductVariant)
+    private readonly variants: Repository<ProductVariant>,
+    @InjectRepository(ProductAudit)
+    private readonly audits: Repository<ProductAudit>,
   ) {}
+
+  private async audit(
+    orgId: string,
+    variantId: string,
+    userId: string | undefined,
+    detalhes: Record<string, unknown>,
+  ) {
+    try {
+      const variant = await this.variants.findOne({ where: { id: variantId } });
+      if (!variant) return;
+      await this.audits.save(
+        this.audits.create({
+          productId: variant.productId,
+          userId: userId ?? null,
+          acao: 'price_set',
+          detalhes,
+        }),
+      );
+    } catch {
+      // best-effort
+    }
+  }
 
   @Post()
   @ApiOperation({
@@ -147,7 +175,7 @@ export class PricesController {
       'Forma alternativa: informe channel_id no corpo. Prefira POST /prices/:channelId/variants/:variantId.',
   })
   async setPrice(
-    @CurrentIdentity() identity: { orgId: string },
+    @CurrentIdentity() identity: { orgId: string; userId?: string },
     @Body() dto: SetPriceDto & { channel_id?: string },
   ) {
     if (!dto.channel_id) {
@@ -174,13 +202,19 @@ export class PricesController {
     });
     price.valor = String(dto.valor);
     price.valorPromocional = dto.valor_promocional != null ? String(dto.valor_promocional) : null;
-    return this.prices.save(price);
+    const saved = await this.prices.save(price);
+    await this.audit(identity.orgId, dto.product_variant_id, identity.userId, {
+      channel_id: dto.channel_id,
+      moeda: dto.moeda,
+      valor: String(dto.valor),
+    });
+    return saved;
   }
 
   @Post(':channelId/variants/:variantId')
   @ApiOperation({ summary: 'Definir preço de variação no canal' })
   async setPriceForVariant(
-    @CurrentIdentity() identity: { orgId: string },
+    @CurrentIdentity() identity: { orgId: string; userId?: string },
     @Param('channelId') channelId: string,
     @Param('variantId') variantId: string,
     @Body() dto: Omit<SetPriceDto, 'product_variant_id'>,
@@ -198,7 +232,13 @@ export class PricesController {
     price.valorPromocional = dto.valor_promocional != null ? String(dto.valor_promocional) : null;
     price.promocaoInicio = null;
     price.promocaoFim = null;
-    return this.prices.save(price);
+    const saved = await this.prices.save(price);
+    await this.audit(identity.orgId, variantId, identity.userId, {
+      channel_id: channelId,
+      moeda: dto.moeda,
+      valor: String(dto.valor),
+    });
+    return saved;
   }
 
   @Get('variant/:variantId')
@@ -256,6 +296,10 @@ export class StockController {
     private readonly stock: Repository<StockItem>,
     @InjectRepository(Warehouse)
     private readonly warehouses: Repository<Warehouse>,
+    @InjectRepository(ProductVariant)
+    private readonly variants: Repository<ProductVariant>,
+    @InjectRepository(ProductAudit)
+    private readonly audits: Repository<ProductAudit>,
   ) {}
 
   @Post()
@@ -264,7 +308,7 @@ export class StockController {
     description: 'disponivel = quantidade - reservado (calculado, nunca armazenado).',
   })
   async setStock(
-    @CurrentIdentity() identity: { orgId: string },
+    @CurrentIdentity() identity: { orgId: string; userId?: string },
     @Body() dto: SetStockDto,
   ) {
     const warehouse = await this.warehouses.findOne({
@@ -282,7 +326,29 @@ export class StockController {
     item.quantidade = dto.quantidade;
     item.reservado = dto.reservado ?? 0;
     item.atualizadoEm = new Date();
-    return this.stock.save(item);
+    const saved = await this.stock.save(item);
+    try {
+      const variant = await this.variants.findOne({
+        where: { id: dto.product_variant_id },
+      });
+      if (variant) {
+        await this.audits.save(
+          this.audits.create({
+            productId: variant.productId,
+            userId: identity.userId ?? null,
+            acao: 'stock_set',
+            detalhes: {
+              warehouse_id: dto.warehouse_id,
+              quantidade: dto.quantidade,
+              reservado: dto.reservado ?? 0,
+            },
+          }),
+        );
+      }
+    } catch {
+      // best-effort
+    }
+    return saved;
   }
 
   @Get('variant/:variantId')

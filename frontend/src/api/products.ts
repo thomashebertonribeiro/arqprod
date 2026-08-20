@@ -2,7 +2,9 @@ import { api, ApiError, getToken } from './client';
 import type {
   AttributeValueRow,
   CategoryAttributeLink,
+  NamedRef,
   Paginated,
+  ProductAuditRow,
   ProductDetail,
   ProductListItem,
   ProductStatus,
@@ -51,6 +53,15 @@ export function updateProduct(
     ncm: string | null;
     cest: string | null;
     custo: string | null;
+    brand_id: string | null;
+    manufacturer_id: string | null;
+    unidade_venda: string | null;
+    data_lancamento: string | null;
+    peso_bruto_kg: string | null;
+    peso_liquido_kg: string | null;
+    altura_cm: string | null;
+    largura_cm: string | null;
+    profundidade_cm: string | null;
     status: ProductStatus;
   }>,
 ) {
@@ -70,6 +81,8 @@ export function createProduct(input: {
   custo?: string;
   category_id?: string;
   supplier_id?: string;
+  brand_id?: string;
+  manufacturer_id?: string;
   status?: ProductStatus;
 }) {
   return api<ProductDetail>('/products', {
@@ -134,4 +147,119 @@ export function listCategories() {
 
 export function listSuppliers() {
   return api<{ data: { id: string; nome: string }[] }>('/suppliers');
+}
+
+export function listBrands() {
+  return api<{ data: NamedRef[] }>('/brands');
+}
+
+export function createBrand(nome: string) {
+  return api<NamedRef>('/brands', { method: 'POST', body: JSON.stringify({ nome }) });
+}
+
+export function listManufacturers() {
+  return api<{ data: NamedRef[] }>('/manufacturers');
+}
+
+export function createManufacturer(nome: string) {
+  return api<NamedRef>('/manufacturers', { method: 'POST', body: JSON.stringify({ nome }) });
+}
+
+export function listChannels() {
+  return api<{ data: NamedRef[] }>('/channels');
+}
+
+export function listWarehouses() {
+  return api<{ data: NamedRef[] }>('/warehouses');
+}
+
+export function listTags() {
+  return api<{ data: NamedRef[] }>('/tags');
+}
+
+export function addProductTags(productId: string, tags: string[]) {
+  return api<ProductDetail>(`/products/${productId}/tags`, {
+    method: 'POST',
+    body: JSON.stringify({ tags }),
+  });
+}
+
+export function removeProductTag(productId: string, tagId: string) {
+  return api<ProductDetail>(`/products/${productId}/tags/${tagId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function duplicateProduct(productId: string) {
+  return api<ProductDetail>(`/products/${productId}/duplicate`, { method: 'POST' });
+}
+
+export function getProductAudits(productId: string) {
+  return api<{ data: ProductAuditRow[] }>(`/products/${productId}/audits`);
+}
+
+export function setVariantPrice(variantId: string, channelId: string, valor: number, valorPromocional?: number) {
+  return api<{ id: string }>(`/prices/${channelId}/variants/${variantId}`, {
+    method: 'POST',
+    body: JSON.stringify({ moeda: 'BRL', valor, valor_promocional: valorPromocional }),
+  });
+}
+
+export function setVariantStock(variantId: string, warehouseId: string, quantidade: number, reservado = 0) {
+  return api<{ id: string }>('/stock', {
+    method: 'POST',
+    body: JSON.stringify({ product_variant_id: variantId, warehouse_id: warehouseId, quantidade, reservado }),
+  });
+}
+
+export function createVariant(
+  productId: string,
+  input: { sku: string; ean_gtin?: string; combinacao?: Record<string, string>; peso_kg?: number },
+) {
+  return api<{ id: string; sku: string }>(`/products/${productId}/variants`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateVariant(
+  productId: string,
+  variantId: string,
+  patch: { sku?: string; ean_gtin?: string | null; status?: 'ativo' | 'inativo' },
+) {
+  return api<{ id: string; sku: string }>(`/products/${productId}/variants/${variantId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+}
+
+export function exportProducts() {
+  return fetch('/api/products/export', {
+    headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+  }).then(async (res) => {
+    if (!res.ok) throw new ApiError(res.status, `Erro ${res.status}`);
+    return res.blob();
+  });
+}
+
+export function importProducts(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  return fetch('/api/products/import', {
+    method: 'POST',
+    headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {},
+    body: form,
+  }).then(async (res) => {
+    if (!res.ok) {
+      let message = `Erro ${res.status}`;
+      try {
+        const body = (await res.json()) as { message?: string };
+        if (body.message) message = body.message;
+      } catch {
+        /* corpo não-JSON */
+      }
+      throw new ApiError(res.status, message);
+    }
+    return (await res.json()) as { created: number; updated: number; skipped: number };
+  });
 }
