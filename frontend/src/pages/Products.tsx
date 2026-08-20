@@ -343,11 +343,6 @@ export default function Products() {
                   <th className="px-3 py-2.5 font-medium">{t('products.col.cest')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.cost')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.status')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('products.col.inventory')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('products.col.channels')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('products.col.markets')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('products.col.category')}</th>
-                  <th className="px-3 py-2.5 font-medium">{t('products.col.space')}</th>
                   <th className="px-3 py-2.5 font-medium">{t('products.col.vendor')}</th>
                   <th className="w-12 px-4 py-2.5"></th>
                 </tr>
@@ -438,33 +433,6 @@ export default function Products() {
                         >
                           {t(`status.${p.status}` as never)}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {p.inventory.tracked ? (
-                          <span
-                            className={`text-sm ${
-                              p.inventory.total_available === 0
-                                ? 'font-medium text-red-600'
-                                : 'text-gray-700'
-                            }`}
-                          >
-                            {p.inventory.total_available} {t('products.inStock')}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-gray-400">{t('products.notTracked')}</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-sm text-gray-700">
-                        {p.sales_channels > 0 ? p.sales_channels : <span className="text-gray-400">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-sm text-gray-700">
-                        {p.markets > 0 ? p.markets : <span className="text-gray-400">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-sm text-gray-700">
-                        {p.category?.nome ?? <span className="text-gray-400">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-sm text-gray-700">
-                        {p.space || <span className="text-gray-400">—</span>}
                       </td>
                       <td className="px-3 py-2.5 text-sm text-gray-700">
                         {p.supplier?.nome ?? <span className="text-gray-400">—</span>}
