@@ -18,6 +18,7 @@ import { ManufacturersModule } from './manufacturers/manufacturers.module';
 import { TagsModule } from './tags/tags.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { AiEnrichmentModule } from './ai-enrichment/ai-enrichment.module';
 import { MetaController } from './meta/meta.controller';
 import { UploadsController } from './uploads/uploads.controller';
 
@@ -51,6 +52,7 @@ import { UploadsController } from './uploads/uploads.controller';
     TagsModule,
     WebhooksModule,
     IntegrationsModule,
+    AiEnrichmentModule,
   ],
   controllers: [MetaController, UploadsController],
   providers: [
