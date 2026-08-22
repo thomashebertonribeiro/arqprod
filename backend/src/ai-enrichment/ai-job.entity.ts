@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -11,6 +12,7 @@ import { Organization } from '../organizations/organization.entity';
 import { Product } from '../products/product.entity';
 import { AiModel } from './ai-model.entity';
 import { AiPrompt } from './ai-prompt.entity';
+import { AiSource } from './ai-source.entity';
 import { User } from '../users/user.entity';
 
 export type AIJobStatus =
@@ -123,6 +125,9 @@ export class AiJob {
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'created_by' })
   createdByUser: User;
+
+  @OneToMany(() => AiSource, (source) => source.job)
+  sources: AiSource[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
