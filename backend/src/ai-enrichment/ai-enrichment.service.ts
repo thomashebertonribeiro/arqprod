@@ -516,9 +516,11 @@ export class AiEnrichmentService {
     }
   }
 
-  async seedAllDefaults(identity: CurrentIdentity): Promise<void> {
+  async seedAllDefaults(identity: CurrentIdentity, promptService?: any): Promise<void> {
     await this.seedDefaultModels(identity);
     await this.seedDefaultRouting(identity);
-    // Prompts são seedados via AiPromptService
+    if (promptService) {
+      await promptService.seedDefaultPrompts(identity);
+    }
   }
 }

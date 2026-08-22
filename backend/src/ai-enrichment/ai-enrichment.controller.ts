@@ -270,7 +270,7 @@ export class AiEnrichmentController {
   @Post('seed/all')
   @ApiOperation({ summary: 'Criar todos os defaults: modelos, roteamento, prompts' })
   async seedAll(@CurrentIdentity() identity: { orgId: string; userId?: string }) {
-    await this.service.seedAllDefaults(identity);
+    await this.service.seedAllDefaults(identity, this.promptService);
     return { message: 'Todos os defaults criados com sucesso' };
   }
 }
