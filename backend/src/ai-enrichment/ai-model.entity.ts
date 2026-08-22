@@ -31,7 +31,7 @@ export class AiModel {
   @Column({ length: 50 })
   provider: string;
 
-  @Column({ nullable: true })
+  @Column({ name: 'base_url', nullable: true })
   baseUrl: string;
 
   @Column({ name: 'api_key_encrypted', nullable: true })
