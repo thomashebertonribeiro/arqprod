@@ -19,6 +19,7 @@ import { TagsModule } from './tags/tags.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { AiEnrichmentModule } from './ai-enrichment/ai-enrichment.module';
+import { MlMonitorModule } from './ml-monitor/ml-monitor.module';
 import { MetaController } from './meta/meta.controller';
 import { UploadsController } from './uploads/uploads.controller';
 
@@ -53,6 +54,7 @@ import { UploadsController } from './uploads/uploads.controller';
     WebhooksModule,
     IntegrationsModule,
     AiEnrichmentModule,
+    MlMonitorModule,
   ],
   controllers: [MetaController, UploadsController],
   providers: [
