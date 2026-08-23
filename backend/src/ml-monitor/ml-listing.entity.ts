@@ -47,16 +47,16 @@ export class MlListing {
   @JoinColumn({ name: 'product_variant_id' })
   productVariant: ProductVariant;
 
-  @Column({ name: 'ml_item_id', length: 30, nullable: true })
+  @Column({ name: 'ml_item_id', type: 'varchar', length: 30, nullable: true })
   mlItemId: string | null;
 
-  @Column({ name: 'ml_permalink', nullable: true })
+  @Column({ name: 'ml_permalink', type: 'text', nullable: true })
   mlPermalink: string | null;
 
-  @Column({ length: 20, default: 'draft' })
+  @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: MlListingStatus;
 
-  @Column({ length: 3, default: 'BRL' })
+  @Column({ type: 'varchar', length: 3, default: 'BRL' })
   moeda: string;
 
   @Column({ name: 'preco', type: 'numeric', precision: 18, scale: 2 })
@@ -68,16 +68,16 @@ export class MlListing {
   @Column({ name: 'quantidade', type: 'int', default: 1 })
   quantidade: number;
 
-  @Column({ name: 'title', length: 60, nullable: true })
+  @Column({ name: 'title', type: 'varchar', length: 60, nullable: true })
   title: string | null;
 
   @Column({ name: 'description', type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ name: 'category_mlb', length: 30, nullable: true })
+  @Column({ name: 'category_mlb', type: 'varchar', length: 30, nullable: true })
   categoryMlb: string | null;
 
-  @Column({ name: 'condition', length: 20, default: 'new' })
+  @Column({ name: 'condition', type: 'varchar', length: 20, default: 'new' })
   condition: string;
 
   @Column({ name: 'attributes', type: 'jsonb', default: () => "'[]'" })
@@ -89,7 +89,7 @@ export class MlListing {
   @Column({ name: 'shipping', type: 'jsonb', default: () => "'{}'" })
   shipping: Record<string, unknown>;
 
-  @Column({ name: 'seller_id', nullable: true })
+  @Column({ name: 'seller_id', type: 'varchar', length: 30, nullable: true })
   sellerId: string | null;
 
   @Column({ name: 'last_sync_at', type: 'timestamptz', nullable: true })
