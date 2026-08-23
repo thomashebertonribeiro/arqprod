@@ -13,10 +13,8 @@ import { ApiBearerAuth, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger'
 import { MlMonitorService, PublishToMlDto } from './ml-monitor.service';
 import { MlProviderAdapterService } from './ml-provider-adapter.service';
 import { MlListingStatus } from './ml-listing.entity';
+import { CurrentIdentity } from '../common/auth/current-identity.decorator';
 
-function CurrentIdentity(): ParameterDecorator {
-  return () => {};
-}
 
 @ApiTags('ML Monitor')
 @ApiBearerAuth()
