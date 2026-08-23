@@ -19,6 +19,7 @@ import { StockItem } from '../stock/stock-item.entity';
 import { Supplier } from '../suppliers/supplier.entity';
 import { ProductVariant } from '../products/product-variant.entity';
 import { ProductAudit } from '../products/product-audit.entity';
+import { MlSyncService } from '../ml-monitor/ml-sync.service';
 
 // ---------------------------------------------------------------- DTOs
 
@@ -144,6 +145,7 @@ export class PricesController {
     private readonly variants: Repository<ProductVariant>,
     @InjectRepository(ProductAudit)
     private readonly audits: Repository<ProductAudit>,
+    private readonly mlSync: MlSyncService,
   ) {}
 
   private async audit(
@@ -300,6 +302,7 @@ export class StockController {
     private readonly variants: Repository<ProductVariant>,
     @InjectRepository(ProductAudit)
     private readonly audits: Repository<ProductAudit>,
+    private readonly mlSync: MlSyncService,
   ) {}
 
   @Post()
@@ -348,6 +351,7 @@ export class StockController {
     } catch {
       // best-effort
     }
+    this.mlSync.syncStock(identity.orgId, dto.product_variant_id, dto.quantidade).catch(() => {});
     return saved;
   }
 

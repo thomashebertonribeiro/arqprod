@@ -7,6 +7,11 @@ import { StockItem } from '../stock/stock-item.entity';
 import { Supplier } from '../suppliers/supplier.entity';
 import { ProductVariant } from '../products/product-variant.entity';
 import { ProductAudit } from '../products/product-audit.entity';
+import { MlSyncService } from '../ml-monitor/ml-sync.service';
+import { MlListing } from '../ml-monitor/ml-listing.entity';
+import { MlProviderAdapterService } from '../ml-monitor/ml-provider-adapter.service';
+import { Integration } from '../integrations/integration.entity';
+import { MlMonitorModule } from '../ml-monitor/ml-monitor.module';
 import {
   ChannelsController,
   PricesController,
@@ -17,7 +22,8 @@ import {
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Channel, Price, Warehouse, StockItem, Supplier, ProductVariant, ProductAudit]),
+    TypeOrmModule.forFeature([Channel, Price, Warehouse, StockItem, Supplier, ProductVariant, ProductAudit, MlListing, Integration]),
+    MlMonitorModule,
   ],
   controllers: [
     ChannelsController,
@@ -26,6 +32,7 @@ import {
     StockController,
     SuppliersController,
   ],
-  exports: [TypeOrmModule],
+  providers: [MlSyncService, MlProviderAdapterService],
+  exports: [TypeOrmModule, MlSyncService],
 })
 export class CommerceModule {}

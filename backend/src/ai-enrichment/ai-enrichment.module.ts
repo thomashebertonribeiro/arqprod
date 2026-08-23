@@ -16,6 +16,7 @@ import { AiPromptService } from './ai-prompt.service';
 import { AiEnrichmentProcessor } from './ai-enrichment.processor';
 import { ProductsModule } from '../products/products.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { MlMonitorModule } from '../ml-monitor/ml-monitor.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     }),
     ProductsModule,
     WebhooksModule,
+    MlMonitorModule,
   ],
   controllers: [AiEnrichmentController],
   providers: [

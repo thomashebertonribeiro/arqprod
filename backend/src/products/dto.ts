@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsIn,
+  IsInt,
   IsNumber,
   IsObject,
   IsOptional,
@@ -116,6 +117,13 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   origem_integracao?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  ml_readiness_score?: number | null;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  ml_listings_count?: number;
 }
 
 export class UpdateProductDto {

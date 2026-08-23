@@ -170,6 +170,8 @@ export class ProductsService {
       atualizado_por_nome: base.atualizadoPorUser?.nome ?? null,
       atributos: base.atributos,
       origem_integracao: base.origemIntegracao,
+      ml_readiness_score: base.mlReadinessScore,
+      ml_listings_count: base.mlListingsCount,
       images: base.images.map((i) => ({
         id: i.id,
         url: i.url,
@@ -971,6 +973,8 @@ export class ProductsService {
         criado_por: p.criadoPor,
         atualizado_por: p.atualizadoPor,
         origem_integracao: p.origemIntegracao,
+        ml_readiness_score: p.mlReadinessScore,
+        ml_listings_count: p.mlListingsCount,
         criado_em: p.criadoEm,
         atualizado_em: p.atualizadoEm,
         thumbnail: thumbnail

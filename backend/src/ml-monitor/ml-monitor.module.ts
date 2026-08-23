@@ -4,6 +4,7 @@ import { MlListing } from './ml-listing.entity';
 import { MlMonitorController } from './ml-monitor.controller';
 import { MlMonitorService } from './ml-monitor.service';
 import { MlProviderAdapterService } from './ml-provider-adapter.service';
+import { MlSyncService } from './ml-sync.service';
 import { Integration } from '../integrations/integration.entity';
 import { ProductVariant } from '../products/product-variant.entity';
 import { Product } from '../products/product.entity';
@@ -15,7 +16,7 @@ import { ProductsModule } from '../products/products.module';
     ProductsModule,
   ],
   controllers: [MlMonitorController],
-  providers: [MlMonitorService, MlProviderAdapterService],
-  exports: [MlMonitorService],
+  providers: [MlMonitorService, MlProviderAdapterService, MlSyncService],
+  exports: [MlMonitorService, MlSyncService],
 })
 export class MlMonitorModule {}

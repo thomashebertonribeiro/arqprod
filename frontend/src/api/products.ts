@@ -285,3 +285,74 @@ export function importProducts(file: File) {
     return (await res.json()) as { created: number; updated: number; skipped: number };
   });
 }
+// ==================== ML MONITOR ====================
+
+export function getMlAuthStatus() {
+  return api('/ml/auth/status');
+}
+
+export function saveMlCredentials(data: {
+  access_token: string;
+  refresh_token?: string;
+  client_id?: string;
+  client_secret?: string;
+}) {
+  return api('/ml/auth/credentials', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function getMlListings(params?: { productId?: string; status?: string; page?: number }) {
+  const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+  return api('/ml/listings' + qs) as Promise<any>;
+}
+
+export function getMlListing(id: string) {
+  return api('/ml/listings/' + id);
+}
+
+export function publishToMl(productId: string, data: {
+  variantId: string;
+  categoryId: string;
+  title?: string;
+  description?: string;
+  price?: number;
+  quantity?: number;
+  condition?: string;
+}) {
+  return api('/ml/publish/' + productId, { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function syncMlListing(id: string) {
+  return api('/ml/listings/' + id + '/sync', { method: 'PUT' });
+}
+
+export function pauseMlListing(id: string) {
+  return api('/ml/listings/' + id + '/pause', { method: 'PUT' });
+}
+
+export function activateMlListing(id: string) {
+  return api('/ml/listings/' + id + '/activate', { method: 'PUT' });
+}
+
+export function updateMlPrice(id: string, price: number) {
+  return api('/ml/listings/' + id + '/price', { method: 'PUT', body: JSON.stringify({ price }) });
+}
+
+export function updateMlStock(id: string, quantity: number) {
+  return api('/ml/listings/' + id + '/stock', { method: 'PUT', body: JSON.stringify({ quantity }) });
+}
+
+export function endMlListing(id: string) {
+  return api('/ml/listings/' + id + '/end', { method: 'PUT' });
+}
+
+export function deleteMlListing(id: string) {
+  return api('/ml/listings/' + id, { method: 'DELETE' });
+}
+
+export function getMlReadiness(productId: string) {
+  return api('/ml/readiness/' + productId);
+}
+
+export function getMlCategories() {
+  return api('/ml/categories');
+}

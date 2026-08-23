@@ -128,6 +128,12 @@ export class Product {
   @Column({ name: 'origem_integracao', type: 'varchar', length: 60, nullable: true })
   origemIntegracao: string | null;
 
+  @Column({ name: 'ml_readiness_score', type: 'int', nullable: true })
+  mlReadinessScore: number | null;
+
+  @Column({ name: 'ml_listings_count', type: 'int', default: 0 })
+  mlListingsCount: number;
+
   @CreateDateColumn({ name: 'criado_em' })
   criadoEm: Date;
 

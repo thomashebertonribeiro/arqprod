@@ -24,6 +24,7 @@ import {
   BatchRejectSuggestionsDto,
 } from './dto';
 import { ProductsService } from '../products/products.service';
+import { MlMonitorService } from '../ml-monitor/ml-monitor.service';
 
 type CurrentIdentity = { orgId: string; userId?: string };
 
@@ -46,6 +47,7 @@ export class AiEnrichmentService {
     @InjectQueue('ai-enrichment')
     private readonly enrichmentQueue: Queue,
     private readonly productsService: ProductsService,
+    private readonly mlMonitorService: MlMonitorService,
   ) {}
 
   // ==================== MODELOS ====================
@@ -315,8 +317,19 @@ export class AiEnrichmentService {
       }
 
       this.logger.log(`Sugestão ${suggestion.id} aplicada ao produto ${suggestion.productId}: ${field} = ${JSON.stringify(value)}`);
+      await this.updateMlReadiness(identity.orgId, suggestion.productId);
     } catch (error: any) {
       this.logger.error(`Erro ao aplicar sugestão ${suggestion.id} ao produto: ${error.message}`);
+    }
+  }
+
+  private async updateMlReadiness(orgId: string, productId: string) {
+    try {
+      const readiness = await this.mlMonitorService.getReadinessForMl(orgId, productId);
+      const score = (readiness as any).score ?? 0;
+      await this.productsService.update(orgId, productId, { ml_readiness_score: score } as any);
+    } catch {
+      // best-effort
     }
   }
 

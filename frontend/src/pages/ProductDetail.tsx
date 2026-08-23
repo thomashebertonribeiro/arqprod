@@ -37,6 +37,7 @@ import AttrRow from '../components/AttrRow';
 import Nav from '../components/Nav';
 import VariantsTable from '../components/VariantsTable';
 import { useI18n } from '../i18n';
+import { publishToMl, getMlListings, getMlReadiness, pauseMlListing, activateMlListing, endMlListing, deleteMlListing, syncMlListing } from '../api/products';
 
 interface CommercialDraft {
   ean_gtin: string;
@@ -112,6 +113,10 @@ export default function ProductDetail() {
 
   const [newTag, setNewTag] = useState('');
   const [tagBusy, setTagBusy] = useState(false);
+  const [mlListings, setMlListings] = useState<any[]>([]);
+  const [mlReadiness, setMlReadiness] = useState<any>(null);
+  const [mlPublishing, setMlPublishing] = useState(false);
+  const [mlCategoryId, setMlCategoryId] = useState('');
   const [dupBusy, setDupBusy] = useState(false);
 
   const [variantModal, setVariantModal] = useState(false);
@@ -283,6 +288,69 @@ export default function ProductDetail() {
     } finally {
       setPhysicalSaving(false);
     }
+  }
+
+  async function publishMl() {
+    if (!product || !mlCategoryId.trim()) return;
+    setMlPublishing(true);
+    try {
+      const variantId = product.variants?.[0]?.id;
+      if (!variantId) return;
+      await publishToMl(product.id, {
+        variantId,
+        categoryId: mlCategoryId,
+        title: product.nome,
+        price: Number(product.custo ?? 0),
+        quantity: product.inventory?.total_available ?? 1,
+      });
+      const mlData = await getMlListings({ productId: product.id }).catch(() => ({ data: [] }));
+      setMlListings(mlData.data ?? []);
+    } catch {
+      //
+    } finally {
+      setMlPublishing(false);
+    }
+  }
+
+  async function syncMl(id: string) {
+    await syncMlListing(id);
+    const mlData = await getMlListings({ productId: product?.id ?? '' }).catch(() => ({ data: [] }));
+    setMlListings(mlData.data ?? []);
+  }
+
+  async function pauseMl(id: string) {
+    await pauseMlListing(id);
+    const mlData = await getMlListings({ productId: product?.id ?? '' }).catch(() => ({ data: [] }));
+    setMlListings(mlData.data ?? []);
+  }
+
+  async function activateMl(id: string) {
+    await activateMlListing(id);
+    const mlData = await getMlListings({ productId: product?.id ?? '' }).catch(() => ({ data: [] }));
+    setMlListings(mlData.data ?? []);
+  }
+
+  async function endMl(id: string) {
+    await endMlListing(id);
+    const mlData = await getMlListings({ productId: product?.id ?? '' }).catch(() => ({ data: [] }));
+    setMlListings(mlData.data ?? []);
+  }
+
+  async function deleteMl(id: string) {
+    await deleteMlListing(id);
+    const mlData = await getMlListings({ productId: product?.id ?? '' }).catch(() => ({ data: [] }));
+    setMlListings(mlData.data ?? []);
+  }
+
+  function mlStatusBadge(status: string) {
+    const cls: Record<string, string> = {
+      active: 'bg-green-100 text-green-800',
+      paused: 'bg-yellow-100 text-yellow-800',
+      ended: 'bg-gray-100 text-gray-600',
+      error: 'bg-red-100 text-red-800',
+      draft: 'bg-blue-100 text-blue-800',
+    };
+    return cls[status] ?? 'bg-gray-100 text-gray-600';
   }
 
   async function addTag() {
@@ -1105,6 +1173,75 @@ export default function ProductDetail() {
                   {tagBusy ? t('common.saving') : '+'}
                 </button>
               </div>
+            </div>
+
+
+            {/* ML Monitor */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="mb-3 text-sm font-semibold text-gray-900">{t('detail.ml')}</h2>
+              {mlReadiness && (
+                <div className="mb-4 rounded-lg bg-gray-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-600">{t('detail.mlScore')}</span>
+                    <span className={`text-lg font-bold ${mlReadiness.score >= 80 ? 'text-green-600' : mlReadiness.score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {mlReadiness.score ?? 0}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                    <div
+                      className={`h-2 rounded-full ${mlReadiness.score >= 80 ? 'bg-green-500' : mlReadiness.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                      style={{ width: `${mlReadiness.score ?? 0}%` }}
+                    />
+                  </div>
+                  {mlReadiness.obrigatorios_faltando?.length > 0 && (
+                    <p className="mt-2 text-xs text-red-600">
+                      Faltando: {mlReadiness.obrigatorios_faltando.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="mb-3 flex gap-2">
+                <input
+                  value={mlCategoryId}
+                  onChange={(e) => setMlCategoryId(e.target.value)}
+                  placeholder="Categoria MLB (ex: MLB1051)"
+                  className="flex-1 rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm outline-none transition focus:border-blue-500"
+                />
+                <button
+                  onClick={publishMl}
+                  disabled={mlPublishing || !mlCategoryId.trim()}
+                  className="rounded-lg bg-orange-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-orange-700 disabled:opacity-40"
+                >
+                  {mlPublishing ? t('detail.mlPublishing') : t('detail.mlPublish')}
+                </button>
+              </div>
+
+              {mlListings.length > 0 ? (
+                <div className="space-y-2">
+                  {mlListings.map((l) => (
+                    <div key={l.id} className="rounded-lg border border-gray-100 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${mlStatusBadge(l.status)}`}>
+                          {t(`detail.ml${l.status.charAt(0).toUpperCase() + l.status.slice(1)}`)}
+                        </span>
+                        <span className="text-xs text-gray-500">R$ {l.preco}</span>
+                      </div>
+                      {l.mlItemId && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <button onClick={() => syncMl(l.id)} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200">{t('detail.mlSync')}</button>
+                          {l.status === 'active' && <button onClick={() => pauseMl(l.id)} className="rounded bg-yellow-100 px-2 py-0.5 text-xs text-yellow-700 hover:bg-yellow-200">{t('detail.mlPause')}</button>}
+                          {l.status === 'paused' && <button onClick={() => activateMl(l.id)} className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700 hover:bg-green-200">{t('detail.mlActivate')}</button>}
+                          {l.status !== 'ended' && <button onClick={() => endMl(l.id)} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200">{t('detail.mlEnd')}</button>}
+                          <button onClick={() => deleteMl(l.id)} className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700 hover:bg-red-200">{t('detail.mlDelete')}</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400">{t('detail.mlNoListings')}</p>
+              )}
             </div>
 
             {audits.length > 0 && (
