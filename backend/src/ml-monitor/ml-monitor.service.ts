@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, IsNull, Not, Like } from 'typeorm';
 import { MlListing, MlListingStatus } from './ml-listing.entity';
 import { MlProviderAdapterService } from './ml-provider-adapter.service';
 import { ProductsService } from '../products/products.service';
@@ -29,7 +29,7 @@ export class MlMonitorService {
     if (!variant) throw new NotFoundException('Variante não encontrada');
 
     const existing = await this.listings.findOne({
-      where: { productVariantId: dto.variantId, mlItemId: In([null, '']) as any },
+      where: { productVariantId: dto.variantId, mlItemId: IsNull() as any },
     });
 
     const price = dto.price ?? (product as any).custo ?? '0';
@@ -170,7 +170,7 @@ export class MlMonitorService {
 
   async syncAllFromMl(orgId: string): Promise<{ synced: number; errors: number }> {
     const allListings = await this.listings.find({
-      where: { organizationId: orgId, mlItemId: In([null, '']) as any },
+      where: { organizationId: orgId, mlItemId: IsNull() as any },
     });
 
     const auth = await this.mlAdapter.getAuthConfig(orgId);
