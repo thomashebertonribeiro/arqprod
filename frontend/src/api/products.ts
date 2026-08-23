@@ -356,3 +356,7 @@ export function getMlReadiness(productId: string) {
 export function getMlCategories() {
   return api('/ml/categories');
 }
+
+export function suggestMlCategory(productId: string) {
+  return api('/ml/suggest-category/' + productId);
+}

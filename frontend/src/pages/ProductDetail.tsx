@@ -37,7 +37,7 @@ import AttrRow from '../components/AttrRow';
 import Nav from '../components/Nav';
 import VariantsTable from '../components/VariantsTable';
 import { useI18n } from '../i18n';
-import { publishToMl, getMlListings, getMlReadiness, pauseMlListing, activateMlListing, endMlListing, deleteMlListing, syncMlListing } from '../api/products';
+import { publishToMl, getMlListings, getMlReadiness, pauseMlListing, activateMlListing, endMlListing, deleteMlListing, syncMlListing, suggestMlCategory } from '../api/products';
 
 interface CommercialDraft {
   ean_gtin: string;
@@ -117,6 +117,8 @@ export default function ProductDetail() {
   const [mlReadiness, setMlReadiness] = useState<any>(null);
   const [mlPublishing, setMlPublishing] = useState(false);
   const [mlCategoryId, setMlCategoryId] = useState('');
+  const [mlSuggested, setMlSuggested] = useState<any>(null);
+  const [mlSuggesting, setMlSuggesting] = useState(false);
   const [dupBusy, setDupBusy] = useState(false);
 
   const [variantModal, setVariantModal] = useState(false);
@@ -1201,6 +1203,27 @@ export default function ProductDetail() {
                 </div>
               )}
 
+              {mlSuggesting && (
+                <p className="mb-2 text-xs text-gray-400">{t('detail.mlSuggesting')}</p>
+              )}
+              {mlSuggested?.suggested && !mlCategoryId && (
+                <div className="mb-2 rounded-lg bg-blue-50 p-2 text-xs text-blue-700">
+                  {t('detail.mlSuggested')}: <strong>{mlSuggested.suggested.name}</strong> ({mlSuggested.suggested.id})
+                </div>
+              )}
+              {mlSuggested?.alternatives?.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {mlSuggested.alternatives.slice(0, 3).map((alt: any) => (
+                    <button
+                      key={alt.id}
+                      onClick={() => setMlCategoryId(alt.id)}
+                      className="rounded-full border border-gray-200 px-2 py-0.5 text-xs text-gray-600 transition hover:bg-gray-100"
+                    >
+                      {alt.name}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="mb-3 flex gap-2">
                 <input
                   value={mlCategoryId}

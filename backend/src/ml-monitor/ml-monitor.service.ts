@@ -319,6 +319,68 @@ export class MlMonitorService {
     }
   }
 
+
+  async suggestCategory(orgId: string, productId: string): Promise<{ suggested: any; alternatives: any[] }> {
+    const product = await this.productsService.findOneEnriched(orgId, productId);
+    if (!product) throw new NotFoundException('Produto não encontrado');
+
+    let categories: any[] = [];
+    try {
+      categories = await this.mlAdapter.getCategories(orgId);
+    } catch (err: any) {
+      this.logger.warn(`Não foi possível buscar categorias ML: ${err.message}`);
+      return { suggested: null, alternatives: [] };
+    }
+
+    const productName = (product as any).nome ?? '';
+    const productDesc = (product as any).descricao ?? '';
+    const brand = (product as any).brand?.nome ?? '';
+    const category = (product as any).category?.nome ?? '';
+    const text = `${productName} ${productDesc} ${brand} ${category}`.toLowerCase();
+
+    const scored = categories.map((cat: any) => {
+      let score = 0;
+      const catName = (cat.name ?? '').toLowerCase();
+      const catId = cat.id ?? '';
+
+      // Palavras-chave que indicam match
+      const keywords: Record<string, string[]> = {
+        'MLB1051': ['celular', 'smartphone', 'phone', 'iphone', 'samsung galaxy', 'android'],
+        'MLB1055': ['notebook', 'laptop', 'computador', 'macbook'],
+        'MLB1000': ['eletrônico', 'eletronico', 'tech', 'gadget'],
+        'MLB1144': ['tv', 'televisão', 'monitor', 'display'],
+        'MLB1071': ['fone', 'headphone', 'earphone', 'airpod', 'bluetooth', 'acessório', 'capa', 'película', 'carregador', 'cabo'],
+        'MLB1039': ['camera', 'câmera', 'fotografia', 'dslr'],
+        'MLB1132': ['jogo', 'game', 'console', 'playstation', 'xbox', 'nintendo'],
+        'MLB1459': ['geladeira', 'refrigerador', 'fogão', 'micro-ondas', 'eletrodoméstico'],
+        'MLB1574': ['roupa', 'camiseta', 'calça', 'vestido', 'moda'],
+        'MLB1196': ['sapato', 'tênis', 'calçado', 'chinelo', 'bota'],
+      };
+
+      for (const [mlbId, kws] of Object.entries(keywords)) {
+        if (catId.startsWith(mlbId) || catId === mlbId) {
+          for (const kw of kws) {
+            if (text.includes(kw)) score += 10;
+          }
+        }
+      }
+
+      // Match direto no nome da categoria
+      const catWords = catName.split(/[\s>-]+/).filter(Boolean);
+      for (const w of catWords) {
+        if (w.length > 3 && text.includes(w.toLowerCase())) score += 5;
+      }
+
+      return { ...cat, score };
+    });
+
+    scored.sort((a: any, b: any) => b.score - a.score);
+    const suggested = scored.find((c: any) => c.score > 0) ?? null;
+    const alternatives = scored.filter((c: any) => c.id !== suggested?.id).slice(0, 5);
+
+    return { suggested, alternatives };
+  }
+
   async getReadinessForMl(orgId: string, productId: string): Promise<Record<string, unknown>> {
     const product = await this.productsService.findOneEnriched(orgId, productId);
     const missing: string[] = [];

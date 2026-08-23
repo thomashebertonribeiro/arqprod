@@ -170,6 +170,17 @@ export class MlMonitorController {
     return { deleted: true };
   }
 
+  // ==================== SUGGEST CATEGORY ====================
+
+  @Get('suggest-category/:productId')
+  @ApiOperation({ summary: 'Sugerir categoria ML via AI (match por palavras-chave)' })
+  async suggestCategory(
+    @CurrentIdentity() identity: { orgId: string },
+    @Param('productId') productId: string,
+  ) {
+    return this.service.suggestCategory(identity.orgId, productId);
+  }
+
   // ==================== READINESS ====================
 
   @Get('readiness/:productId')
