@@ -119,18 +119,16 @@ export class MlMonitorService {
 
   async listListings(orgId: string, filters: { productId?: string; status?: MlListingStatus; page?: number; perPage?: number } = {}): Promise<{ data: MlListing[]; meta: any }> {
     const { productId, status, page = 1, perPage = 20 } = filters;
-    const qb = this.listings
-      .createQueryBuilder('l')
-      .leftJoinAndSelect('l.product', 'p')
-      .leftJoinAndSelect('l.productVariant', 'pv')
-      .where('l.organization_id = :orgId', { orgId });
+    const where: any = { organizationId: orgId };
+    if (productId) where.productId = productId;
+    if (status) where.status = status;
 
-    if (productId) qb.andWhere('l.product_id = :productId', { productId });
-    if (status) qb.andWhere('l.status = :status', { status });
-
-    qb.orderBy('l.criado_em', 'DESC');
-    const total = await qb.getCount();
-    const data = await qb.skip((page - 1) * perPage).take(perPage).getMany();
+    const [data, total] = await this.listings.findAndCount({
+      where,
+      order: { criadoEm: 'DESC' },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    });
 
     return { data, meta: { total, page, perPage, totalPages: Math.ceil(total / perPage) } };
   }
