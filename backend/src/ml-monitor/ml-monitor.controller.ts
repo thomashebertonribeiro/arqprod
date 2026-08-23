@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { MlMonitorService, PublishToMlDto } from './ml-monitor.service';
+import { MlWebhookService, MlNotification } from './ml-webhook.service';
 import { MlProviderAdapterService } from './ml-provider-adapter.service';
 import { MlListingStatus } from './ml-listing.entity';
 import { CurrentIdentity } from '../common/auth/current-identity.decorator';
@@ -23,6 +24,7 @@ export class MlMonitorController {
   constructor(
     private readonly service: MlMonitorService,
     private readonly adapter: MlProviderAdapterService,
+    private readonly webhookService: MlWebhookService,
   ) {}
 
   // ==================== AUTH ====================
@@ -177,6 +179,19 @@ export class MlMonitorController {
     @Param('productId') productId: string,
   ) {
     return this.service.getReadinessForMl(identity.orgId, productId);
+  }
+
+  // ==================== WEBHOOK ====================
+
+  @Post('webhook')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Receber notificações do ML (webhook callback)' })
+  async handleWebhook(
+    @CurrentIdentity() identity: { orgId: string },
+    @Body() body: MlNotification,
+  ) {
+    await this.webhookService.handleNotification(identity.orgId, body);
+    return { received: true };
   }
 
   // ==================== CATEGORIES ====================
