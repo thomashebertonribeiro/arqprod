@@ -15,6 +15,7 @@ import CategoriesSection from '../components/CategoriesSection';
 import Nav from '../components/Nav';
 import RefListSection from '../components/RefListSection';
 import MlSettingsSection from '../components/MlSettingsSection';
+import AiSettingsSection from '../components/AiSettingsSection';
 import { useI18n } from '../i18n';
 
 function PlusIcon() {
@@ -47,7 +48,7 @@ const inputCls =
 
 export default function Settings() {
   const { t } = useI18n();
-  const [tab, setTab] = useState<'campos' | 'categorias' | 'marcas' | 'ml'>('campos');
+  const [tab, setTab] = useState<'campos' | 'categorias' | 'marcas' | 'ml' | 'ai'>('campos');
   const [data, setData] = useState<Paginated<AttributeDef> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -362,6 +363,7 @@ export default function Settings() {
         </div>
 
         {tab === 'ml' && <MlSettingsSection />}
+        {tab === 'ai' && <AiSettingsSection />}
         {tab === 'categorias' && <CategoriesSection />}
 
         {tab === 'marcas' && (

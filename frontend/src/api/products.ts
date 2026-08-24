@@ -360,3 +360,82 @@ export function getMlCategories() {
 export function suggestMlCategory(productId: string) {
   return api('/ml/suggest-category/' + productId);
 }
+
+// ==================== AI ENRICHMENT ====================
+
+export function listAiModels() {
+  return api('/ai/models');
+}
+
+export function createAiModel(data: any) {
+  return api('/ai/models', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function updateAiModel(id: string, data: any) {
+  return api('/ai/models/' + id, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
+export function deleteAiModel(id: string) {
+  return api('/ai/models/' + id, { method: 'DELETE' });
+}
+
+export function listAiRouting() {
+  return api('/ai/routing');
+}
+
+export function createAiRouting(data: any) {
+  return api('/ai/routing', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function listAiPrompts() {
+  return api('/ai/prompts');
+}
+
+export function getAiPromptLatest(name: string) {
+  return api('/ai/prompts/' + name + '/latest');
+}
+
+export function createAiPrompt(data: any) {
+  return api('/ai/prompts', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export function seedAiAll() {
+  return api('/ai/seed/all', { method: 'POST' });
+}
+
+export function seedAiModels() {
+  return api('/ai/models/seed', { method: 'POST' });
+}
+
+export function seedAiRouting() {
+  return api('/ai/routing/seed', { method: 'POST' });
+}
+
+export function seedAiPrompts() {
+  return api('/ai/prompts/seed', { method: 'POST' });
+}
+
+export function listAiJobs(params?: { status?: string; page?: number }) {
+  const qs = params ? '?' + new URLSearchParams(params as any).toString() : '';
+  return api('/ai/jobs' + qs);
+}
+
+export function getAiJob(id: string) {
+  return api('/ai/jobs/' + id);
+}
+
+export function retryAiJob(id: string) {
+  return api('/ai/jobs/' + id + '/retry', { method: 'POST' });
+}
+
+export function listAiSuggestions(productId: string) {
+  return api('/ai/suggestions/' + productId);
+}
+
+export function approveAiSuggestion(id: string, note?: string) {
+  return api('/ai/suggestions/' + id + '/approve', { method: 'POST', body: JSON.stringify({ reviewNote: note }) });
+}
+
+export function rejectAiSuggestion(id: string, note?: string) {
+  return api('/ai/suggestions/' + id + '/reject', { method: 'POST', body: JSON.stringify({ reviewNote: note }) });
+}
